@@ -8,7 +8,7 @@ import time
 def resetar_fila():
     try:
         print('resetando')
-        c = os.popen(f"git checkout .")
+        c = os.popen(f"git checkout -- .")
         c.read()
         c = os.popen(f"git clean -f -d")
         c.read()
