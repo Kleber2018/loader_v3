@@ -1,2 +1,2 @@
 # Código ofuscado
-4.1 teste git
+4.1 teste script
