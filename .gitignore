@@ -8,3 +8,5 @@ load.conf
 firebase.conf
 *.pem
 *.conf
+umid_banco.db
+
