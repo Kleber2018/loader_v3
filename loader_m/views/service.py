@@ -3,97 +3,99 @@ from views import service
 from views import bdnew
 import time
 class ConfigFaixa:
- def __init__(P,b,j,l,u,Q,e):
-  P.temp_min=b
-  P.temp_max=j
-  P.umid_ajuste=l
-  P.etapa=u
-  P.updated=Q
-  P.expiration=e
+ def __init__(Y,v,K,j,q,X,H):
+  Y.temp_min=v
+  Y.temp_max=K
+  Y.umid_ajuste=j
+  Y.etapa=q
+  Y.updated=X
+  Y.expiration=H
 class ConfigGeral:
- def __init__(P,i,l,y,p,f,u):
-  P.intervalo_seconds=i
-  P.umid_ajuste=l
-  P.escala_temp=y
-  P.alerta_desat=p 
-  P.speaker=f
-  P.etapa=u
+ def __init__(Y,a,j,p,Q,T,q):
+  Y.intervalo_seconds=a
+  Y.umid_ajuste=j
+  Y.escala_temp=p
+  Y.alerta_desat=Q 
+  Y.speaker=T
+  Y.etapa=q
 def getLocalConfigFaixa(bd):
  try:
-  w=sqlite3.connect(bd)
-  t=w.cursor()
-  t.execute("SELECT  temp_min, temp_max, umid_ajuste, etapa, updated, expiration FROM config WHERE status = 1")
-  g=t.fetchall()
-  if len(g)>0:
-   w.close()
-   return ConfigFaixa(float(g[0][0]),float(g[0][1]),int(g[0][2]),g[0][3],g[0][4],g[0][5])
+  c=sqlite3.connect(bd)
+  R=c.cursor()
+  R.execute("SELECT  temp_min, temp_max, umid_ajuste, etapa, updated, expiration FROM config WHERE status = 1")
+  G=R.fetchall()
+  if len(G)>0:
+   c.close()
+   return ConfigFaixa(float(G[0][0]),float(G[0][1]),int(G[0][2]),G[0][3],G[0][4],G[0][5])
   else:
-   t.execute("SELECT  temp_min, temp_max, umid_ajuste, etapa, updated, expiration FROM config WHERE id_config = 5;")
-   g=t.fetchall() 
-   t.execute("UPDATE config SET status = 1 WHERE id_config = 5;")
-   w.close()
-   return ConfigFaixa(float(g[0][0]),float(g[0][1]),int(g[0][2]),g[0][3],g[0][4],g[0][5])
+   R.execute("SELECT  temp_min, temp_max, umid_ajuste, etapa, updated, expiration FROM config WHERE id_config = 5;")
+   G=R.fetchall() 
+   R.execute("UPDATE config SET status = 1 WHERE id_config = 5;")
+   c.close()
+   return ConfigFaixa(float(G[0][0]),float(G[0][1]),int(G[0][2]),G[0][3],G[0][4],G[0][5])
  except Exception as e:
   print('Erro consultar BD getLocalConfigFaixa',e)
   time.sleep(2)
   return False
 def getLocalConfigGeral(bd):
  try:
-  w=sqlite3.connect(bd)
-  t=w.cursor()
-  t.execute("SELECT  intervalo_seconds, umid_ajuste, escala_temp, alerta_desat, speaker, etapa FROM config WHERE etapa = 'Padrão'")
-  g=t.fetchall()
-  if len(g)>0:
-   w.close()
-   return ConfigGeral(int(g[0][0]),int(g[0][1]),g[0][2],g[0][3],g[0][4],g[0][5])
+  c=sqlite3.connect(bd)
+  R=c.cursor()
+  R.execute("SELECT  intervalo_seconds, umid_ajuste, escala_temp, alerta_desat, speaker, etapa FROM config WHERE etapa = 'Padrão'")
+  G=R.fetchall()
+  if len(G)>0:
+   c.close()
+   return ConfigGeral(int(G[0][0]),int(G[0][1]),G[0][2],G[0][3],G[0][4],G[0][5])
   else:
-   t.execute("SELECT  intervalo_seconds, umid_ajuste, escala_temp, alerta_desat, speaker, etapa FROM config WHERE id_config = 5;")
-   g=t.fetchall()
-   t.execute("UPDATE config SET etapa = 'Padrão' WHERE id_config = 5;")
-   w.close()
-   return ConfigGeral(int(g[0][0]),int(g[0][1]),g[0][2],g[0][3],g[0][4],g[0][5])
+   R.execute("SELECT  intervalo_seconds, umid_ajuste, escala_temp, alerta_desat, speaker, etapa FROM config WHERE id_config = 5;")
+   G=R.fetchall()
+   R.execute("UPDATE config SET etapa = 'Padrão' WHERE id_config = 5;")
+   c.close()
+   return ConfigGeral(int(G[0][0]),int(G[0][1]),G[0][2],G[0][3],G[0][4],G[0][5])
  except Exception as e:
   print('Erro consultar BD getLocalConfigGeral',e)
-  bdnew.criandoSQLite(bd)
+  bdnew.criandoSQLiteConf(bd)
   time.sleep(2)
   return False
-def add_medicao(N,L,numoculto,c,bd):
+def add_medicao(V,t,L,numoculto,x,bd):
  try:
-  w=sqlite3.connect(bd)
+  c=sqlite3.connect(bd)
   print('adicionando medição')
-  t=w.cursor()
-  t.execute("INSERT INTO medicoes (temperatura, umidade, oculto, alerta) VALUES (?, ?, ?, ?);",(N,L,numoculto,c))
-  w.commit()
-  w.close()
+  R=c.cursor()
+  R.execute("INSERT INTO medicoes (temperatura, temperatura2, umidade, oculto, alerta, status) VALUES (?, ?, ?, ?, ?, 0);",(V,t,L,numoculto,x))
+  c.commit()
+  c.close()
  except Exception as error:
-  print(f"erro ao adicionar medicao: {error}")
-def updt_medicao(N,L,c,bd):
+  print(f"erro ao adicionar medicao em medições: {error}")
+  bdnew.criandoSQLiteMedicao(bd)
+def updt_medicao(V,t,L,x,bd):
  try:
-  w=sqlite3.connect(bd)
-  t=w.cursor()
-  t.execute("UPDATE medicao SET temperatura = ?, umidade = ?, alerta = ?, updated = datetime('now', 'localtime') WHERE id_medicao = 1;",(N,L,c))
-  w.commit()
-  w.close()
+  c=sqlite3.connect(bd)
+  R=c.cursor()
+  R.execute("UPDATE medicao SET temperatura = ?, temperatura2 = ?, umidade = ?, alerta = ?, updated = datetime('now', 'localtime') WHERE id_medicao = 1;",(V,t,L,x))
+  c.commit()
+  c.close()
  except Exception as error:
   print(f"erro ao atualizar medicao: {error}")
-def verificarAlerta(N,L,config,bd_umid,configGeral):
+  bdnew.criandoSQLiteMedicao(bd)
+def verificarAlerta(V,L,config,bd_umid,configGeral):
  global r
  r=0
- if N>0:
-  if N>config.temp_max:
+ if V>0:
+  if V>config.temp_max:
    r=11
-  elif N<config.temp_min:
+  elif V<config.temp_min:
    r=12
  try:
-  w=sqlite3.connect(bd_umid)
-  t=w.cursor()
-  t.execute("SELECT umidade FROM umidade WHERE temperatura = ?",(int(N),))
-  g=t.fetchall()
-  w.close()
-  if len(g)>0:
-   if L<g[0][0]-(configGeral.umid_ajuste+1):
+  c=sqlite3.connect(bd_umid)
+  R=c.cursor()
+  R.execute("SELECT umidade FROM umidade WHERE temperatura = ?",(int(V),))
+  G=R.fetchall()
+  c.close()
+  if len(G)>0:
+   if L<G[0][0]-(configGeral.umid_ajuste+1):
     r=r+36
-   elif L>g[0][0]+(configGeral.umid_ajuste+1):
+   elif L>G[0][0]+(configGeral.umid_ajuste+1):
     r=r+33
   else:
    print('nenhum registro')
@@ -101,31 +103,31 @@ def verificarAlerta(N,L,config,bd_umid,configGeral):
   print('ERRO NA TABELA DE UMIDADE busca',error)
  return r
 def getserial():
- n="0000000000000000"
+ i="0000000000000000"
  try:
   f=open('/proc/cpuinfo','r')
-  for H in f:
-   if H[0:6]=='Serial':
-    n=H[10:26]
+  for w in f:
+   if w[0:6]=='Serial':
+    i=w[10:26]
   f.close()
  except:
-  n="ERROR000000000"
- return n
+  i="ERROR000000000"
+ return i
 def get_cpu_temp():
- z=open("/sys/class/thermal/thermal_zone0/temp")
- V=z.read()
- z.close()
- return float(V)/1000
+ u=open("/sys/class/thermal/thermal_zone0/temp")
+ s=u.read()
+ u.close()
+ return float(s)/1000
 def add_system_monitor(bd_m):
  try:
-  w=sqlite3.connect(bd_m)
+  c=sqlite3.connect(bd_m)
   print('adicionando medição monitor')
-  t=w.cursor()
-  R=get_cpu_temp()
+  R=c.cursor()
+  E=get_cpu_temp()
   ns=getserial()
-  t.execute("INSERT INTO monitor (temperatura, serie) VALUES (?, ?);",(R,ns))
-  w.commit()
-  w.close()
+  R.execute("INSERT INTO monitor (temperatura, serie) VALUES (?, ?);",(E,ns))
+  c.commit()
+  c.close()
  except Exception as error:
   print(f"erro ao adicionar monitor: {error}")
   bdnew.criandoSQLiteMonitorSys(bd_m)

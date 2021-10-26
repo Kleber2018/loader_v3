@@ -1,44 +1,30 @@
 #!/usr/bin/env python3
 
 from datetime import datetime, timedelta
-import json
 import os
 import time
+
+import subprocess
 
 def resetar_fila():
     try:
         print('resetando')
-        c = os.popen(f"git checkout -- .")
-        c.read()
-        c = os.popen(f"git clean -f -d")
-        c.read()
-        c.close()
+        subprocess.run(["git", "checkout", "--", "."])
+        subprocess.run(["git", "clean", "-f", "-d"])
         return 1
     except Exception as e:
         print('erro no git reset', e)
         return 0
 
-def volta_backup():
-    try:
-        print('fazendo backup')
-        c = os.popen(f"python3 ./../script_bkp.py")
-        c.read()
-        c.close()
-        return 1
-    except Exception as e:
-        print('erro no git backup', e)
-        return 0
-
 def atualizando():
     try:
         if backup() == 1:
-            time.sleep(10.0)
+            time.sleep(5.0)
             resetar_fila()
             time.sleep(5.0)
             print("atualizando para nova versão")
-            c = os.popen(f"git pull")
-            c.read()
-            c.close()
+            subprocess.run(["sudo", "git", "pull"])
+            subprocess.run(["sudo", "chmod", "-R", "777", "/etc/loader/loader"])
         return 1
     except Exception as e:
         print('erro atualização', e)
@@ -48,9 +34,7 @@ def clear_bkp():
     try:
         now = datetime.now()
         print(now.year)
-        c = os.popen(f"rm -fR ./../../loaders_bkp")
-        c.read()
-        c.close()
+        subprocess.run(["rm" "-fR" "/etc/loader/loader_bkp"])
         return 1
     except Exception as e:
         print('erro clear_bkp', e)
@@ -63,9 +47,7 @@ def backup():
         time.sleep(5.0)
         now = datetime.now()
         print(now.year)
-        c = os.popen(f"cp -fR ./../../loaders ./../../loaders_bkp")
-        c.read()
-        c.close()
+        subprocess.run(["cp", "-fR", "/etc/loader/loader", "/etc/loader/loader_bkp"])
         return 1
     except Exception as e:
         print('erro backup2', e)

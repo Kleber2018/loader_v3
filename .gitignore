@@ -1,6 +1,10 @@
+
 loader_banco.db
 login_livre.conf
-key.conf
 loader.conf
+monitor_banco4.db
+conf_banco.db
 load.conf
-monitor_banco.db
+firebase.conf
+*.pem
+*.conf

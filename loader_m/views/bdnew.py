@@ -1,13 +1,23 @@
 import sqlite3
-def criandoSQLite(b):
+def criandoSQLiteMedicao(b):
      try:
           con = sqlite3.connect(b)
           print('criando o BD')
           cursor = con.cursor()
-          cursor.execute('''CREATE TABLE medicoes (id_medicao integer PRIMARY KEY AUTOINCREMENT NOT NULL, temperatura real, umidade real, oculto integer, alerta integer, created DATE DEFAULT (datetime('now','localtime')) NOT NULL)''')
+          cursor.execute('''CREATE TABLE medicoes (id_medicao integer PRIMARY KEY AUTOINCREMENT NOT NULL, temperatura real, temperatura2 real, umidade real, oculto integer, alerta integer, status integer, created DATE DEFAULT (datetime('now','localtime')) NOT NULL)''')
           cursor.execute(
-               '''CREATE TABLE medicao (id_medicao integer PRIMARY KEY AUTOINCREMENT NOT NULL, temperatura real, umidade real, alerta integer, updated DATE DEFAULT (datetime('now','localtime')) NOT NULL)''')
-          cursor.execute("INSERT INTO medicao (temperatura, umidade, alerta) VALUES (0, 0, 0)")
+               '''CREATE TABLE medicao (id_medicao integer PRIMARY KEY AUTOINCREMENT NOT NULL, temperatura real, temperatura2 real, umidade real, alerta integer, updated DATE DEFAULT (datetime('now','localtime')) NOT NULL)''')
+          cursor.execute("INSERT INTO medicao (temperatura, temperatura2, umidade, alerta) VALUES (0, 0, 0, 0)")
+          con.commit()
+          con.close()
+     except Exception as e:
+          print('Erro consultar BD getLocalConfigFaixa', e)
+
+def criandoSQLiteConf(b):
+     try:
+          con = sqlite3.connect(b)
+          print('criando o BD')
+          cursor = con.cursor()
           cursor.execute('''CREATE TABLE usuario (login text, senha text, nome text, telefone text, email text, privilegios text)''')
           cursor.execute("INSERT INTO usuario VALUES ('kleber', '1234', 'Kleber','333333', 't@t.com', 'adm')")
           cursor.execute('''CREATE TABLE config (id_config integer PRIMARY KEY AUTOINCREMENT NOT NULL, etapa text, intervalo_seconds integer , temp_min real , temp_max real, umid_ajuste integer, escala_temp text, obs text, alerta_desat text, speaker integer, status integer, updated DATE DEFAULT (datetime('now','localtime')) NOT NULL, expiration DATE DEFAULT (datetime('now','localtime')) NOT NULL)''')
@@ -27,8 +37,6 @@ def criandoSQLite(b):
           con.close()
      except Exception as e:
           print('Erro consultar BD getLocalConfigFaixa', e)
-
-
 
 def criandoSQLiteMonitorSys(b):
      try:
