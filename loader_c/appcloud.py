@@ -162,10 +162,6 @@ def main():
         global filtro
         global contador3
         global user_auth
-        try:
-            user_auth = auth_fire.sign_in_with_email_and_password(us['user'], us['key'])
-        except Exception as e:
-            capture_exception(e)
         if contador > 300:
             contador3 += 1
             contador = 0
@@ -179,6 +175,7 @@ def main():
                 user_auth = auth_fire.sign_in_with_email_and_password(us['user'], us['key'])
                 db.child(ns).child("medicoes").push(data, user_auth['idToken']) # cria novo arquivo
             except Exception as e:
+                capture_message('erro no exception 178 appcloud')
                 capture_exception(e)
         if contador2 > 10:
             contador2 = 0

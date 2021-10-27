@@ -544,14 +544,12 @@ def main():
                 else:
                     display_temp.temperature(int(temperature_DS18B20[0]))
             except RuntimeError as error:
-                capture_exception(error)
                 print('Sensor temperatura erro5', error.args[0])
                 display_temp.show('err5')
                 time.sleep(2)
                 temperatura_fahrenheit = 0
                 temperatura_celcius = 0
             except Exception as error:
-                capture_exception(error)
                 print('Sensor temperatura erro6', error)
                 display_temp.show('err6')
                 time.sleep(5)
@@ -646,11 +644,6 @@ def main():
                     humidade,
                     alerta_vr,
                     bd)
-
-        #enviando por socket
-        # message = b"Mensagem teste"
-        # mm = {"id": 2, "name": "abc"}
-        # m = json.dumps({"id": 2, "name": "abc"})
         try:
             #print('enviando no socekt alerta_vr:', alerta_vr)
             sio.emit('medicao', {'temperatura': temperatura_fahrenheit, 'temperatura2': temperaturaSHT_fahrenheit, 'umidade': humidade, 'alerta': alerta_vr, 'updated': time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())})
@@ -686,10 +679,6 @@ def main():
             capture_exception(error)
             print('erro no  if vr % 2 == 0:', error)
 
-        #if configFaixa.expiration < str(datetime.now()) :
-        #    print('implementar lógica para pular etapa pq expirou')
-        
-        #em produção trocar para 10min
         if alerta_vr > 0 and configFaixa.updated < str(datetime.now() - timedelta(minutes=1)): 
             if alerta_sonoro_contador > 3:
                 contador = 0
@@ -730,7 +719,6 @@ def main():
                         GPIO.output(26, True)
                 except Exception as error:
                     capture_exception(error)
-                    print('erro no led status')
                 time.sleep(2)
                 try:
                     if vr % 2 == 0:
@@ -755,8 +743,7 @@ def main():
                 vr = 0
                 configGeral = service.getLocalConfigGeral(bd_conf)
                 configFaixa = service.getLocalConfigFaixa(bd_conf)
-                verificaLedEtapa(configFaixa.etapa)
-                #print(f"config Faixa'{configFaixa.etapa}'")
+                verificaLedEtapa(configFaixa.etapa))
             time.sleep(2)
             try:
                 if vr % 2 == 0:
@@ -778,9 +765,6 @@ def main():
             time.sleep(2)
 
 
-
-
-##sensor de temperatura ds18b20
 def read_temp_raw(device_file):
     f = open(device_file, 'r')
     lines = f.readlines()
