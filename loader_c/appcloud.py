@@ -7,6 +7,13 @@ import os
 import ssl
 import time
 
+class Medicao:
+    def __init__(self, temp, umid, temp2):
+        self.temperatura = temp
+        self.umidade = umid
+        self.temperatura2 = temp2
+
+
 def getserial():
     #https://qastack.com.br/raspberrypi/2086/how-do-i-get-the-serial-number
     # Extract serial from cpuinfo file
@@ -22,10 +29,10 @@ def getserial():
     return cpuserial
 
 global ns
-ns = getserial()
+ns = 'medidores/'+getserial()
 from sentry_sdk import capture_exception, capture_message, init
 try:
-    aa = open('/etc/loader/loader/sentry.conf', 'r')
+    aa = open('/etc/loader/load/sentry.conf', 'r')
     lines = aa.readlines()
     init(
         lines[0],
@@ -42,7 +49,7 @@ except Exception as e:
 
 import pyrebase
 
-f = open('/etc/loader/loader/firebase.conf', 'r')
+f = open('/etc/loader/load/firebase.conf', 'r')
 r = f.readlines()
 config = json.loads(r[0])
 f.close()
@@ -63,48 +70,34 @@ def get_cpu_temp():
     return float(cpu_temp)/1000
 
 from views import auth
+from views import calc
+from views import firmware
 
 global us
+global user
 
 try:
-    tempFile = open( '/etc/loader/loader/cloud.conf')
+    tempFile = open( '/etc/loader/load/cloud.conf')
     jwt_user = tempFile.read()
     tempFile.close()
+    tempVFile = open( '/etc/loader/loader/version.conf')
+    version_local = tempVFile.readlines()
+    tempVFile.close()
     us = auth.verify_and_decode_jwt(jwt_user)
     from datetime import datetime
     hora = f'{datetime.now()}'
-    dt = {'hora': hora, 'log': 'inicializando'}
+    dt = {'hora': hora, 'log': 'inicializando', 'version': version_local[0]}
     user = auth_fire.sign_in_with_email_and_password(us['user'], us['key'])
     db.child(ns).child("log").push(dt, user['idToken']) #edita o mesmo arquivo
 except Exception as e:
     capture_exception(e)
+    print('erro de autenticação', e)
 
-def atualizar_firmware():
-    import subprocess
-    try:
-        subprocess.run(["sudo", "python3", "/etc/loader/loader/atualiza.py"])
-        return 1
-    except Exception as e :
-        capture_exception(e)
-        return 0
-
-def rollback_atualizar(v):
-    from datetime import datetime
-    import subprocess
-    try:
-        subprocess.run(["sudo", "python3", "/etc/loader/loader/rollback_updt.py"])
-        now = datetime.now()
-        arquivo = open('/etc/loader/loader/version.conf', 'w')
-        arquivo.write(v - 0.1)
-        arquivo.close()
-        return 1
-    except Exception as e :
-        capture_exception(e)
-        return 0
 
 def verify_firmware():
-    firmware = db.child(ns).child("firmware").get(user['idToken']) #edita o mesmo arquivo
-    fw = firmware.val()
+    firmw = db.child(ns).child("firmware").get(user['idToken']) #edita o mesmo arquivo
+    print('firmware22', firmw.val())
+    fw = firmw.val()
     version_local = 0
     try:
         tempFile = open( '/etc/loader/loader/version.conf')
@@ -119,33 +112,39 @@ def verify_firmware():
         importance = 0
         global version_web
         version_web = 0
-        for t in firmware.each():
+        for t in firmw.each():
             if t.key() ==  'importance':
                 importance = t.val()
             if t.key() ==  'version':
                 version_web = t.val()
         print('testeeee', importance, version_web)
+        capture_message('atualizar_firmware 131')
         if importance == 9:
             if version_web > version_local:
                 print('executar código de atualização')
-                atualizar_firmware()
+                capture_message('atualizar_firmware 134')
+                firmware.atualizar_firmware()
                 arquivo = open( '/etc/loader/loader/version.conf', 'w')
                 arquivo.write(str(version_web))
                 arquivo.close()
     except Exception as e:
+        capture_message('atualizar_firmware 140')
         capture_exception(e)
         print(e)
-
 
 
 def main():
     sio = socketio.Client()
     global contador
-    contador = 290
+    contador = 400
     global contador2
-    contador2 = 10
+    contador2 = 9
     global contador3
-    contador3 = 22
+    global contador_media
+    contador_media = 3
+    contador3 = 20
+    global medicoes
+    medicoes = []
     global filtro
     filtro = 0
     @sio.event
@@ -156,37 +155,61 @@ def main():
         global us
         global ns
         global contador
+        global medicoes
         contador += 1
         global contador2
         contador2 += 1
+        global contador_media
+        contador_media += 1
         global filtro
+        global user
         global contador3
-        global user_auth
-        if contador > 300:
-            contador3 += 1
-            contador = 0
-            data['cpu'] = round(get_cpu_temp())
-            data['filtro'] = filtro
-            if filtro == 1:
-                filtro = 0
-            else:
-                filtro = 1
-            try:
-                user_auth = auth_fire.sign_in_with_email_and_password(us['user'], us['key'])
-                db.child(ns).child("medicoes").push(data, user_auth['idToken']) # cria novo arquivo
-            except Exception as e:
-                capture_message('erro no exception 178 appcloud')
-                capture_exception(e)
+        
         if contador2 > 10:
             contador2 = 0
             data['cpu'] = round(get_cpu_temp())
             try:
-                db.child(ns).child("medicao").set(data, user_auth['idToken']) #edita o mesmo arquivo
+                db.child(ns).child("medicao").set(data, user['idToken']) #edita o mesmo arquivo
             except Exception as e:
                 capture_exception(e)
-        if contador3 > 24:
-            contador3 = 0
-            verify_firmware()
+                try:
+                    user = auth_fire.sign_in_with_email_and_password(us['user'], us['key'])
+                except Exception as e:
+                    print('erro de autenticação', e)
+                print('erro de autenticação', e)
+
+        if contador_media > 6:
+            contador_media = 0
+            m = Medicao(float(data['temperatura']), float(data['umidade']), float(data['temperatura2']))
+            medicoes = calc.array_medicoes(medicoes, m )
+        
+        if contador > 500:
+            contador3 += 1
+            if contador3 > 20:
+                contador3 = 0
+                verify_firmware()
+            contador = 0
+            med = calc.get_media(medicoes)
+            data['temperatura'] = med.temperatura
+            data['temperatura2'] = med.temperatura2
+            data['umidade'] = med.umidade
+            data['cpu'] = round(get_cpu_temp())
+            data['filtro'] = filtro
+            if filtro == 0:
+                filtro = 1
+            elif filtro == 1:
+                filtro = 2
+            else:
+                filtro = 0
+            try:
+                print('armazenando', data)
+                user = auth_fire.sign_in_with_email_and_password(us['user'], us['key'])
+                db.child(ns).child("medicoes").push(data, user['idToken']) # cria novo arquivo
+            except Exception as e:
+                capture_exception(e)
+                print('erro de autenticação', e)
+
+
     @sio.event
     def disconnect():
         print('disconnected from server')
@@ -195,10 +218,13 @@ def main():
         vr_erro = vr_erro+1
         try:
             sio.connect('http://0.0.0.0:35494')
+            print('my sid is', sio.sid)
             break
         except Exception as e:
             capture_exception(e)
+            print('erro no servidor', e)
             if vr_erro > 9:
+                print('erro socket')
                 break
             time.sleep(5.0*vr_erro)     
     sio.wait()  

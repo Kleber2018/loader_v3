@@ -29,7 +29,7 @@ ns = getserial()
 from sentry_sdk import capture_exception, capture_message, init
 from sentry_sdk.integrations.flask import FlaskIntegration
 try:
-    aa = open('/etc/loader/loader/sentry.conf', 'r')
+    aa = open('/etc/loader/load/sentry.conf', 'r')
     lines = aa.readlines()
     aa.close()
     init(
@@ -54,8 +54,8 @@ except Exception as e:
 app = Flask(__name__)
 CORS(app)
 
-bd_m = '/etc/loader/loader/loader_banco.db'
-bd_conf = '/etc/loader/loader/conf_banco.db'
+bd_m = '/etc/loader/load/loader_banco.db'
+bd_conf = '/etc/loader/load/conf_banco.db'
 version = '3.1.0'
 
 # chave secreta da sessão
@@ -233,7 +233,7 @@ def loader():
                     # 'exp': (datetime.datetime.now() + datetime.timedelta(weeks=2)).timestamp(),
                 }
                 jwt_created = auth.create_jwt(payload)
-                arquivo = open('/etc/loader/loader/load.conf', 'w')
+                arquivo = open('/etc/loader/load/load.conf', 'w')
                 arquivo.write(jwt_created)
                 arquivo.close()
                 # return {'token': jwt_created} # armazenar para utilizar posteriormente
@@ -625,7 +625,7 @@ def keycloud():
                 }
                 jwt_created = auth.create_jwt(payload)
                 print(jwt_created)
-                arquivo = open('/etc/loader/loader/cloud.conf', 'w')
+                arquivo = open('/etc/loader/load/cloud.conf', 'w')
                 arquivo.write(jwt_created)
                 arquivo.close()
                 return jsonify({'token': jwt_created})
@@ -683,7 +683,7 @@ def resetarkey():
         capture_exception(e)
         return jsonify({'erro': 'Necessario estar logado'})
     try:
-        arquivo = open('/etc/loader/loader/key.conf', 'w')
+        arquivo = open('/etc/loader/load/key.conf', 'w')
         arquivo.write(f'{datetime.now()}')
         arquivo.close()
         return jsonify({'retorno': 'Resetado todos os acessos com sucesso'})

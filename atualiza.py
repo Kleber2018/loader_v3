@@ -3,8 +3,8 @@
 from datetime import datetime, timedelta
 import os
 import time
-
 import subprocess
+import git
 
 def getserial():
     #https://qastack.com.br/raspberrypi/2086/how-do-i-get-the-serial-number
@@ -24,7 +24,7 @@ global ns
 ns = getserial()
 from sentry_sdk import capture_exception, capture_message, init
 try:
-    aa = open('/etc/loader/loader/sentry.conf', 'r')
+    aa = open('/etc/loader/load/sentry.conf', 'r')
     lines = aa.readlines()
     init(
         lines[0],
@@ -35,7 +35,6 @@ try:
         traces_sample_rate=1.0
     )
     aa.close()
-    capture_message("atualizando projeto")
 except Exception as e:
     print("erro sentry.conf")
 
@@ -46,36 +45,43 @@ def resetar_fila():
         subprocess.run(["git", "clean", "-f", "-d"])
         return 1
     except Exception as e:
-        capture_exception(e)
         print('erro no git reset', e)
         return 0
 
 def atualizando():
-    try:
-        if backup() == 1:
-            time.sleep(5.0)
-            resetar_fila()
-            time.sleep(5.0)
-            print("atualizando para nova versão")
-            subprocess.run(["sudo", "git", "pull"])
-            time.sleep(40.0)
-            subprocess.run(["sudo", "chmod", "-R", "777", "/etc/loader/loader"])
-            time.sleep(10.0)
-            subprocess.run(["sudo", "reboot"])
-        return 1
-    except Exception as e:
-        capture_exception(e)
-        print('erro atualização', e)
-        return 0
+     try:
+          capture_message('executou atualização')
+          if backup() == 1:
+               try:
+                    subprocess.run(["rm", "-f", "/etc/loader/loader/.git/index.lock"])
+               except Exception as e:
+                    capture_exception(e)
+               repo = git.Repo('/etc/loader/loader')
+               repo.git.reset('--hard')
+               repo_heads = repo.heads
+               repo_heads['v3'].checkout()
+               repo.git.reset('--hard')
+               repo.git.clean('-xdf')
+               repo.remotes.origin.pull()
+               print("atualizado")
+
+               time.sleep(10.0)
+               subprocess.run(["sudo", "chmod", "-R", "777", "/etc/loader/loader"])
+               time.sleep(10.0)
+               subprocess.run(["sudo", "reboot"])
+          return 1
+     except Exception as e:
+          capture_exception(e)
+          print('erro atualização', e)
+          return 0
 
 def clear_bkp():
     try:
         now = datetime.now()
         print(now.year)
-        subprocess.run(["rm" "-fR" "/etc/loader/loader_bkp"])
+        subprocess.run(["rm", "-fR", "/etc/loader/loader_bkp"])
         return 1
     except Exception as e:
-        capture_exception(e)
         print('erro clear_bkp', e)
         return 0
 

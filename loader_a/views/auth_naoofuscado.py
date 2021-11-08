@@ -1,3 +1,9 @@
+
+
+
+
+
+
 import hmac
 import hashlib
 import base64
@@ -5,11 +11,11 @@ import json
 import datetime
 import sqlite3
 #ofuscado
-bd='/etc/loader/load/loader_banco.db'
+bd = '/etc/loader/loader/conf_banco.db'
 u='52d3f853c19f8b63c0918c126422aa2d99b1aef33ec63d41dea4fadf19406e54' 
 def create_jwt(n):
  try:
-  G=open('/etc/loader/load/key.conf','r')
+  G=open('/etc/loader/loader/key.conf','r')
   u=G.readline()
   G.close()
  except:
@@ -23,7 +29,7 @@ def create_jwt(n):
  return I
 def verify_and_decode_jwt(I):
  try:
-  G=open('/etc/loader/load/key.conf','r')
+  G=open('/etc/loader/loader/key.conf','r')
   u=G.readline()
   G.close()
  except:

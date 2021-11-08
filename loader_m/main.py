@@ -13,7 +13,7 @@ ns = service.getserial()
 
 from sentry_sdk import capture_exception, capture_message, init
 try:
-    aa = open('/etc/loader/loader/sentry.conf', 'r')
+    aa = open('/etc/loader/load/sentry.conf', 'r')
     lines = aa.readlines()
     aa.close()
     init(
@@ -97,10 +97,10 @@ import glob
 from datetime import datetime, timedelta
 
 #bd = '/home/pi/estufa_banco.db'
-bd = '/etc/loader/loader/loader_banco.db'
-bd_conf = '/etc/loader/loader/conf_banco.db'
-bd_umid = '/etc/loader/loader/umid_banco.db' #tabela de umidade para referencia 
-bd_monitor = '/etc/loader/loader/monitor_banco4.db' #para armazenar dados do sistema - temp cpu
+bd = '/etc/loader/load/loader_banco.db'
+bd_conf = '/etc/loader/load/conf_banco.db'
+bd_umid = '/etc/loader/load/umid_banco.db' #tabela de umidade para referencia 
+bd_monitor = '/etc/loader/load/monitor_banco4.db' #para armazenar dados do sistema - temp cpu
 
 #inicializando SOCKET
 import socketio
@@ -153,6 +153,12 @@ def iniciaSensorTemp():
         time.sleep(5)
         return False
 
+from views import calc
+class Medicao:
+    def __init__(self, temp, umid, temp2):
+        self.temperatura = temp
+        self.umidade = umid
+        self.temperatura2 = temp2
 
 class ConfigFaixa:
     def __init__(self, temp_min, temp_max, umid_ajuste, etapa, updated, expiration):
@@ -200,7 +206,7 @@ def Login_livre(channel):
         display_humid.show('T 10')
 
         GPIO.output(26, True)  # Acende o LED
-        arquivo = open('/etc/loader/loader/login_livre.conf', 'w')
+        arquivo = open('/etc/loader/load/login_livre.conf', 'w')
         arquivo.write(f'{datetime.now()}')
         arquivo.close()
         import socket #https://wiki.python.org.br/SocketBasico
@@ -402,11 +408,11 @@ def iniciaSHT():
         print('Sensor umidade erro26', error.args[0])
         display_humid.show('er26')
         time.sleep(2)
-        capture_exception(error)
+        capture_message('erro sensor sht 26')
         return False
     except Exception as error:
         print('Sensor umidade erro2', error)
-        capture_exception(error)
+        capture_message('erro sensor sht 2')
         display_humid.show('err2')
         return False
 
@@ -419,7 +425,6 @@ def main():
         DS18B20status = True
     except Exception as error:
         DS18B20status = False
-        capture_exception(error)
         display_temp.show('er22')
     global SHTstatus
     time.sleep(3)
@@ -429,15 +434,14 @@ def main():
         SHTstatus = True
     except Exception as error:
         print('err25', error)
-        capture_exception(error)
         SHTstatus = False
         ##display_humid.show('er25')
     print(str(SHTstatus))
-    #GPIO.output(26, True)  #speker
+    GPIO.output(26, True)  #speker
     time.sleep(0.2)
     GPIO.output(26, False)  #speker
     time.sleep(0.7)
-    #GPIO.output(26, True)  #speker
+    GPIO.output(26, True)  #speker
     time.sleep(0.3)
     GPIO.output(26, False)  #speker
     time.sleep(1.0)
@@ -471,6 +475,9 @@ def main():
     global oculto
     oculto = 0
     global temperatura_celcius
+
+    global medicoes
+    medicoes = []
 
     humidade = 0
     global alerta_sonoro
@@ -544,12 +551,15 @@ def main():
                 else:
                     display_temp.temperature(int(temperature_DS18B20[0]))
             except RuntimeError as error:
+                capture_message('erro sensor DS18B20 5')
+                message(error)
                 print('Sensor temperatura erro5', error.args[0])
                 display_temp.show('err5')
                 time.sleep(2)
                 temperatura_fahrenheit = 0
                 temperatura_celcius = 0
             except Exception as error:
+                capture_message('erro sensor DS18B20 6')
                 print('Sensor temperatura erro6', error)
                 display_temp.show('err6')
                 time.sleep(5)
@@ -578,13 +588,13 @@ def main():
                 humidade = round(sensor.relative_humidity,1)
                 display_humid.show(str('U '+str(int(sensor.relative_humidity))))
             except RuntimeError as error:
-                capture_exception(error)
+                capture_message('erro sensor sht 5')
                 print('erro5', error.args[0])
                 display_humid.show('err5')
                 humidade = 0
                 time.sleep(5)
             except Exception as error:
-                capture_exception(error)
+                capture_message('erro sensor sht 6')
                 print('erro6', error)
                 display_humid.show('err6')
                 time.sleep(5)
@@ -594,6 +604,9 @@ def main():
             alerta_vr = service.verificarAlerta(temperatura_fahrenheit, humidade, configFaixa, bd_umid, configGeral)#ok = 0, TA =11, TB=12, HA=33, HB=36, TA+HA=44, TA+HB=47, TB+HA=45, TB+HB=48
 
 
+        #calculando média
+        m = Medicao(float(temperatura_fahrenheit), float(humidade), float(temperaturaSHT_fahrenheit))
+        medicoes = calc.array_medicoes(medicoes, m )
 
         #armazenando no BD
         try:
@@ -601,9 +614,10 @@ def main():
                 contadorTemp = 0
                 if humidade != 0 or temperatura_celcius != 0:
                     try:
-                        service.add_medicao(temperatura_fahrenheit,
-                                    temperaturaSHT_fahrenheit,
-                                    humidade,
+                        med = calc.get_media(medicoes)
+                        service.add_medicao(med.temperatura,
+                                    med.temperatura2,
+                                    med.umidade,
                                     oculto,
                                     alerta_vr,
                                     bd)
@@ -621,7 +635,7 @@ def main():
                         print('erro23', error)
                         time.sleep(5)
             else:
-                contadorTemp = contadorTemp + 6
+                contadorTemp += 6
         except Exception as error:
             capture_exception(error)
             print('erro no vr para armazenar no bd', error)
@@ -630,7 +644,7 @@ def main():
 
     #armazenando no Monitor
         try:
-            contadorMonitor = contadorMonitor + 1
+            contadorMonitor += 1
             if contadorMonitor > 20 :
                 service.add_system_monitor(bd_monitor)
                 contadorMonitor = 0
@@ -644,6 +658,11 @@ def main():
                     humidade,
                     alerta_vr,
                     bd)
+
+        #enviando por socket
+        # message = b"Mensagem teste"
+        # mm = {"id": 2, "name": "abc"}
+        # m = json.dumps({"id": 2, "name": "abc"})
         try:
             #print('enviando no socekt alerta_vr:', alerta_vr)
             sio.emit('medicao', {'temperatura': temperatura_fahrenheit, 'temperatura2': temperaturaSHT_fahrenheit, 'umidade': humidade, 'alerta': alerta_vr, 'updated': time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())})
@@ -679,26 +698,30 @@ def main():
             capture_exception(error)
             print('erro no  if vr % 2 == 0:', error)
 
+        #if configFaixa.expiration < str(datetime.now()) :
+        #    print('implementar lógica para pular etapa pq expirou')
+        
+        #em produção trocar para 10min
         if alerta_vr > 0 and configFaixa.updated < str(datetime.now() - timedelta(minutes=1)): 
             if alerta_sonoro_contador > 3:
                 contador = 0
                 while (contador < 4):
-                    contador = contador + 1
-                    # GPIO.output(26, True)  #speker
+                    contador += 1
+                    GPIO.output(26, True)  #speker
                     time.sleep(1.4)
                     if alerta_vr == 11 or alerta_vr == 44 or alerta_vr == 47: #temp alta
                         display_temp.show(str('----'))
-                        # GPIO.output(26, False)  #speker
+                        GPIO.output(26, False)  #speker
                     elif alerta_vr == 12 or alerta_vr == 45 or alerta_vr == 48: #temp baixa
                         display_temp.show('-   ')
-                        # GPIO.output(26, False)  #speker
+                        GPIO.output(26, False)  #speker
                     if alerta_vr == 33 or alerta_vr == 44 or alerta_vr == 45: #umid alta
                         display_humid.show(str('----'))
-                        # GPIO.output(26, False)  #speker
-                        # GPIO.output(26, True)  #speker
+                        GPIO.output(26, False)  #speker
+                        GPIO.output(26, True)  #speker
                     elif alerta_vr == 36 or alerta_vr == 47 or alerta_vr == 48:  # umid baixa
                         display_humid.show(str('-   '))
-                        # GPIO.output(26, False)  #speker
+                        GPIO.output(26, False)  #speker
 
                     time.sleep(0.6)
                     if sensor:
@@ -719,6 +742,7 @@ def main():
                         GPIO.output(26, True)
                 except Exception as error:
                     capture_exception(error)
+                    print('erro no led status')
                 time.sleep(2)
                 try:
                     if vr % 2 == 0:
@@ -729,7 +753,7 @@ def main():
                     capture_exception(error)
                     print('erro no led status')
                 time.sleep(2)
-            alerta_sonoro_contador = alerta_sonoro_contador + 1
+            alerta_sonoro_contador += 1
             configGeral = service.getLocalConfigGeral(bd_conf)
             configFaixa = service.getLocalConfigFaixa(bd_conf)
             verificaLedEtapa(configFaixa.etapa)
@@ -743,7 +767,8 @@ def main():
                 vr = 0
                 configGeral = service.getLocalConfigGeral(bd_conf)
                 configFaixa = service.getLocalConfigFaixa(bd_conf)
-                verificaLedEtapa(configFaixa.etapa))
+                verificaLedEtapa(configFaixa.etapa)
+                #print(f"config Faixa'{configFaixa.etapa}'")
             time.sleep(2)
             try:
                 if vr % 2 == 0:
@@ -765,6 +790,9 @@ def main():
             time.sleep(2)
 
 
+
+
+##sensor de temperatura ds18b20
 def read_temp_raw(device_file):
     f = open(device_file, 'r')
     lines = f.readlines()
