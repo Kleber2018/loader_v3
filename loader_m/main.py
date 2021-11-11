@@ -43,7 +43,9 @@ try:
     GPIO.setup(13, GPIO.OUT)
     GPIO.setup(26, GPIO.OUT) #led run
     GPIO.setup(12, GPIO.OUT) # speaker
-    GPIO.output(26, False)  # Acende o LED Run
+    GPIO.output(12, True)  # Acende o LED Run
+    time.sleep(0.4)
+    GPIO.output(12, False)  # Acende o LED Run
 
     GPIO.output(21, False)  # Acende o LED 1
     GPIO.output(5, True)  # Acende o LED 2
@@ -437,13 +439,13 @@ def main():
         SHTstatus = False
         ##display_humid.show('er25')
     print(str(SHTstatus))
-    GPIO.output(26, True)  #speker
+    GPIO.output(12, True)  #speker
     time.sleep(0.2)
-    GPIO.output(26, False)  #speker
+    GPIO.output(12, False)  #speker
     time.sleep(0.7)
-    GPIO.output(26, True)  #speker
+    GPIO.output(12, True)  #speker
     time.sleep(0.3)
-    GPIO.output(26, False)  #speker
+    GPIO.output(12, False)  #speker
     time.sleep(1.0)
     global configFaixa
     global configGeral
@@ -707,21 +709,21 @@ def main():
                 contador = 0
                 while (contador < 4):
                     contador += 1
-                    GPIO.output(26, True)  #speker
+                    GPIO.output(12, True)  #speker
                     time.sleep(1.4)
                     if alerta_vr == 11 or alerta_vr == 44 or alerta_vr == 47: #temp alta
                         display_temp.show(str('----'))
-                        GPIO.output(26, False)  #speker
+                        GPIO.output(12, False)  #speker
                     elif alerta_vr == 12 or alerta_vr == 45 or alerta_vr == 48: #temp baixa
                         display_temp.show('-   ')
-                        GPIO.output(26, False)  #speker
+                        GPIO.output(12, False)  #speker
                     if alerta_vr == 33 or alerta_vr == 44 or alerta_vr == 45: #umid alta
                         display_humid.show(str('----'))
-                        GPIO.output(26, False)  #speker
+                        GPIO.output(12, False)  #speker
                         GPIO.output(26, True)  #speker
                     elif alerta_vr == 36 or alerta_vr == 47 or alerta_vr == 48:  # umid baixa
                         display_humid.show(str('-   '))
-                        GPIO.output(26, False)  #speker
+                        GPIO.output(12, False)  #speker
 
                     time.sleep(0.6)
                     if sensor:
