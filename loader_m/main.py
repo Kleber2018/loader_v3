@@ -146,7 +146,7 @@ def set_display_temp(val, tipo):
     #tipo: C:celcius, F: fahrenheit, T: texto
     #val: em fahrenheit
     try:
-        if login_livre_status > 20:
+        if login_livre_status > 40:
             if tipo == 'F':
                 if int(val) > 99:
                     display_temp.show(str(str(int(val)) + 'F'))
@@ -164,12 +164,16 @@ def set_display_temp(val, tipo):
         capture_exception(error)
 
 def set_display_umid(val):
+    global login_livre_status
     #val: em %
     try:
-        if not str(val).isdigit(): #não numero
-            display_humid.show(val)
+        if login_livre_status > 40:
+            if not str(val).isdigit(): #não numero
+                display_humid.show(val)
+            else:
+                display_humid.show(str('U ' + str(int(val))))
         else:
-            display_humid.show(str('U ' + str(int(val))))
+            login_livre_status =+ 1
     except Exception as error:
         capture_exception(error)
 
