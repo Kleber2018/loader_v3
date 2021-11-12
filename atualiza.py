@@ -49,37 +49,41 @@ def resetar_fila():
         return 0
 
 def atualizando():
-     try:
-          capture_message('executou atualização')
-          if backup() == 1:
-               try:
-                    subprocess.run(["rm", "-f", "/etc/loader/loader/.git/index.lock"])
-               except Exception as e:
-                    capture_exception(e)
-               repo = git.Repo('/etc/loader/loader')
-               repo.git.reset('--hard')
-               repo_heads = repo.heads
-               repo_heads['v3'].checkout()
-               repo.git.reset('--hard')
-               repo.git.clean('-xdf')
-               repo.remotes.origin.pull()
-               print("atualizado")
+    try:
+        capture_message('executou atualização')
+        if backup() == 1:
+            try:
+                subprocess.run(["sudo", "rm", "-f", "/etc/loader/loader/.git/index.lock"])
+            except Exception as e:
+                capture_exception(e)
+            repo = git.Repo('/etc/loader/loader')
+            repo.git.reset('--hard')
+            repo_heads = repo.heads
+            try:
+                print(repo_heads)
+                repo_heads['master'].checkout()
+            except Exception as e:
+                capture_exception(e)
+            repo.git.reset('--hard')
+            repo.git.clean('-xdf')
+            repo.remotes.origin.pull()
+            print("atualizado")
 
-               time.sleep(10.0)
-               subprocess.run(["sudo", "chmod", "-R", "777", "/etc/loader/loader"])
-               time.sleep(10.0)
-               subprocess.run(["sudo", "reboot"])
-          return 1
-     except Exception as e:
-          capture_exception(e)
-          print('erro atualização', e)
-          return 0
+            time.sleep(10.0)
+            subprocess.run(["sudo", "chmod", "-R", "777", "/etc/loader/loader"])
+            time.sleep(10.0)
+            subprocess.run(["sudo", "reboot"])
+        return 1
+    except Exception as e:
+        capture_exception(e)
+        print('erro atualização', e)
+        return 0
 
 def clear_bkp():
     try:
         now = datetime.now()
         print(now.year)
-        subprocess.run(["rm", "-fR", "/etc/loader/loader_bkp"])
+        subprocess.run(["sudo", "rm", "-fR", "/etc/loader/loader_bkp"])
         return 1
     except Exception as e:
         print('erro clear_bkp', e)
@@ -92,7 +96,7 @@ def backup():
         time.sleep(5.0)
         now = datetime.now()
         print(now.year)
-        subprocess.run(["cp", "-fR", "/etc/loader/loader", "/etc/loader/loader_bkp"])
+        subprocess.run(["sudo", "cp", "-fR", "/etc/loader/loader", "/etc/loader/loader_bkp"])
         return 1
     except Exception as e:
         capture_exception(e)
