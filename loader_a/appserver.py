@@ -91,6 +91,17 @@ class Config:
         self.updated = updated
         self.obs = obs
 
+class ConfigFaixa:
+    def __init__(self,  temp_min, temp_max, umid_ajuste, etapa, updated, expiration, intervalo_seconds, obs):
+        self.temp_min = temp_min
+        self.intervalo_seconds = intervalo_seconds
+        self.temp_max = temp_max
+        self.umid_ajuste = umid_ajuste
+        self.etapa = etapa
+        self.updated = updated
+        self.expiration = expiration
+        self.obs = obs
+
 from views import auth
 
 # PARA ALTERAR DATATIME DO RASPBERRY - http://127.0.0.1:5000/updatedatasistema?datetime="Mon Aug 28 20:10:11 UTC-3 2019"
@@ -454,13 +465,33 @@ def apiconfig():
         capture_exception(e)
         return jsonify({'erro': f"{e}"})
 
+## api de configurações
+@app.route('/apiconfigetapa', methods=['GET'])
+def apietapaconfig():
+    try:
+        configui = getLocalConfigFaixa()
+        return jsonify(configui)
+    except Exception as e:
+        capture_exception(e)
+        return jsonify({'erro': f"{e}"})
+
+## api de configurações
+@app.route('/apiconfiggeral', methods=['GET'])
+def apiconfiggeral():
+    try:
+        configui = getLocalConfigGeral()
+        return jsonify(configui)
+    except Exception as e:
+        capture_exception(e)
+        return jsonify({'erro': f"{e}"})
+
 def configRetorno():
     try:
         conn = sqlite3.connect(bd_conf)
         cur = conn.cursor()
         cur.execute(
             "SELECT etapa, intervalo_seconds, temp_min, temp_max, umid_ajuste, escala_temp, alerta_desat, speaker, updated, obs "
-            "FROM config WHERE id_config = 5")
+            "FROM config WHERE id_config = 1")
         configs = []
         for etapa, intervalo_seconds, temp_min, temp_max, umid_ajuste, escala_temp, alerta_desat, speaker, updated, obs in cur:
             configs.append(
@@ -482,24 +513,44 @@ def configRetorno():
         print(f"Erro SQLite: {e}")
         return {'erro': f"{e}"}
 
+def getLocalConfigFaixa():
+    try:
+        # global configFaixa
+        con = sqlite3.connect(bd_conf)
+        cursor = con.cursor()
+        cursor.execute(
+            "SELECT  temp_min, temp_max, umid_ajuste, etapa, updated, expiration, intervalo_seconds, obs FROM etapa WHERE status = 1")
+
+        rows = cursor.fetchall()
+        if len(rows) > 0:
+            con.close()
+            return ConfigFaixa(float(rows[0][0]), float(rows[0][1]), int(rows[0][2]), rows[0][3], rows[0][4],
+                               rows[0][5], rows[0][6], rows[0][7])
+        else:
+            cursor.execute(
+                "SELECT  temp_min, temp_max, umid_ajuste, etapa, updated, expiration, intervalo_seconds, obs FROM etapa WHERE id_config = 5;")
+            rows = cursor.fetchall()
+            cursor.execute("UPDATE config SET status = 1 WHERE id_config = 5;")
+            con.close()
+            return ConfigFaixa(float(rows[0][0]), float(rows[0][1]), int(rows[0][2]), rows[0][3], rows[0][4],
+                               rows[0][5], rows[0][6], rows[0][7])
+    except Exception as e:
+        print('Erro consultar BD getLocalConfigFaixa', e)
+        time.sleep(2)
+        return False
 
 def getLocalConfigGeral():
     try:
         con = sqlite3.connect(bd_conf)
         cursor = con.cursor()
         cursor.execute(
-            "SELECT etapa, intervalo_seconds, temp_min, temp_max, umid_ajuste, escala_temp, alerta_desat, speaker, updated, obs FROM config WHERE id_config = 5;")
+            "SELECT etapa, intervalo_seconds, temp_min, temp_max, umid_ajuste, escala_temp, alerta_desat, speaker, updated, obs FROM config WHERE id_config = 1;")
         rows = cursor.fetchall()
         if len(rows) > 0:
             con.close()
             return Config(rows[0][0], int(rows[0][1]), int(rows[0][2]), int(rows[0][3]), int(rows[0][4]), rows[0][5], rows[0][6], rows[0][7], rows[0][8], rows[0][9])
         else:
-            cursor.execute(
-                "SELECT etapa, intervalo_seconds, temp_min, temp_max, umid_ajuste, escala_temp, alerta_desat, speaker, updated, obs FROM config WHERE id_config = 5;")
-            rows = cursor.fetchall()
-            cursor.execute("UPDATE config SET etapa = 'Personalizada' WHERE id_config = 5;")
-            con.close()
-            return Config(rows[0][0], int(rows[0][1]), int(rows[0][2]), int(rows[0][3]), int(rows[0][4]), rows[0][5], rows[0][6], rows[0][7], rows[0][8], rows[0][9])
+                return {'erro': f"Nenhum registro encontrado"}
     except Exception as e:
         capture_exception(e)
         print('Erro consultar BD getLocalConfigGeral', e)
