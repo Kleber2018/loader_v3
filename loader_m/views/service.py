@@ -27,7 +27,7 @@ def getLocalConfigFaixa(bd):
         con = sqlite3.connect(bd)
         cursor = con.cursor()
         cursor.execute(
-            "SELECT  temp_min, temp_max, umid_ajuste, etapa, updated, expiration FROM config WHERE status = 1")
+            "SELECT  temp_min, temp_max, umid_ajuste, etapa, updated, expiration FROM etapa WHERE status = 1")
 
         rows = cursor.fetchall()
         if len(rows) > 0:
@@ -35,7 +35,7 @@ def getLocalConfigFaixa(bd):
             return ConfigFaixa(float(rows[0][0]), float(rows[0][1]), int(rows[0][2]), rows[0][3], rows[0][4], rows[0][5])
         else:
             cursor.execute(
-                "SELECT  temp_min, temp_max, umid_ajuste, etapa, updated, expiration FROM config WHERE id_config = 5;")
+                "SELECT  temp_min, temp_max, umid_ajuste, etapa, updated, expiration FROM etapa WHERE id_config = 5;")
             rows = cursor.fetchall()   
             cursor.execute("UPDATE config SET status = 1 WHERE id_config = 5;") 
             con.close()
@@ -53,18 +53,14 @@ def getLocalConfigGeral(bd):
         con = sqlite3.connect(bd)
         cursor = con.cursor()
         cursor.execute(
-            "SELECT  intervalo_seconds, umid_ajuste, escala_temp, alerta_desat, speaker, etapa FROM config WHERE etapa = 'Padrão'")
+            "SELECT  intervalo_seconds, umid_ajuste, escala_temp, alerta_desat, speaker, etapa FROM config WHERE id_config = '1'")
         rows = cursor.fetchall()
         if len(rows) > 0:
             con.close()
             return ConfigGeral(int(rows[0][0]), int(rows[0][1]), rows[0][2], rows[0][3], rows[0][4], rows[0][5])
         else:
-            cursor.execute(
-                "SELECT  intervalo_seconds, umid_ajuste, escala_temp, alerta_desat, speaker, etapa FROM config WHERE id_config = 5;")
-            rows = cursor.fetchall()
-            cursor.execute("UPDATE config SET etapa = 'Padrão' WHERE id_config = 5;")
-            con.close()
-            return ConfigGeral(int(rows[0][0]), int(rows[0][1]), rows[0][2], rows[0][3], rows[0][4], rows[0][5])
+            bdnew.criandoSQLiteConf(bd)
+            return False
     except Exception as e:
         print('Erro consultar BD getLocalConfigGeral', e)
         bdnew.criandoSQLiteConf(bd)

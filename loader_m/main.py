@@ -324,7 +324,7 @@ def PulaEtapa(channel):
         print('atualizando etapa')
         cursor = con.cursor()
         cursor.execute(
-            "SELECT id_config FROM config WHERE status = 1")
+            "SELECT id_config FROM etapa WHERE status = 1")
         id_c  = 1
         rows = cursor.fetchall()
         if len(rows) > 0:
@@ -332,8 +332,8 @@ def PulaEtapa(channel):
         if id_c > 5:
             id_c = 1
         print(((str(id_c)), str(datetime.now())))
-        cursor.execute("UPDATE config SET status = 0, updated = ? WHERE status = 1;", (str(datetime.now()),))
-        cursor.execute("UPDATE config SET status = 1, updated = ? WHERE id_config = ?;", (str(datetime.now()), str(id_c)))
+        cursor.execute("UPDATE etapa SET status = 0, updated = ? WHERE status = 1;", (str(datetime.now()),))
+        cursor.execute("UPDATE etapa SET status = 1, updated = ? WHERE id_config = ?;", (str(datetime.now()), str(id_c)))
         con.commit()
         con.close()
     except Exception as error:
