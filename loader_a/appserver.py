@@ -497,7 +497,7 @@ def getLocalConfigGeral():
             cursor.execute(
                 "SELECT etapa, intervalo_seconds, temp_min, temp_max, umid_ajuste, escala_temp, alerta_desat, speaker, updated, obs FROM config WHERE id_config = 5;")
             rows = cursor.fetchall()
-            cursor.execute("UPDATE config SET etapa = 'Padrão' WHERE id_config = 5;")
+            cursor.execute("UPDATE config SET etapa = 'Personalizada' WHERE id_config = 5;")
             con.close()
             return Config(rows[0][0], int(rows[0][1]), int(rows[0][2]), int(rows[0][3]), int(rows[0][4]), rows[0][5], rows[0][6], rows[0][7], rows[0][8], rows[0][9])
     except Exception as e:

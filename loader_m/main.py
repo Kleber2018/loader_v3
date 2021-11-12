@@ -44,10 +44,10 @@ try:
     GPIO.setup(26, GPIO.OUT) #led run
     GPIO.setup(12, GPIO.OUT) # speaker
 
-    GPIO.output(21, False)  # Acende o LED 1
+    GPIO.output(21, True)  # Acende o LED 1
     GPIO.output(5, True)  # Acende o LED 2
-    GPIO.output(6, False)  # Acende o LED 3
-    GPIO.output(13, False)  # Acende o LED 4
+    GPIO.output(6, True)  # Acende o LED 3
+    GPIO.output(13, True)  # Acende o LED 4
 
 except RuntimeError as error:
     capture_exception(error)
@@ -129,9 +129,12 @@ while True:
         capture_exception(error)
         time.sleep(5.0*vr_erro)
 
-def speaker_alerta(stat):
+def speaker_alerta(stat, vr):#se retornar 1 é pq está habilitado o alerta
     try:
-        GPIO.output(12, stat) #True or False
+        if vr == 1:
+            GPIO.output(12, stat) #True or False
+        else:
+            GPIO.output(12, False)
     except Exception as error:
         capture_exception(error)
 
@@ -163,9 +166,13 @@ def set_display_temp(val, tipo):
 def set_display_umid(val):
     #val: em %
     try:
-        display_humid.show(str('U ' + str(int(val))))
+        if not str(val).isdigit(): #não numero
+            display_humid.show(val)
+        else:
+            display_humid.show(str('U ' + str(int(val))))
     except Exception as error:
         capture_exception(error)
+
 
 def set_led_run(vr):
     try:
@@ -181,7 +188,6 @@ def iniciaSensorTemp():
     try:
         # Numero dos pinos da Raspberry Pi configurada no modo Broadcom.
         # Pull-up interno habilitado, necessita de um sinal nivel lógico baixo para ser acionado.
-        print('inicia sensor de temperatura')
         base_dir = '/sys/bus/w1/devices/'
         device_folder = glob.glob(base_dir + '28*')[0]
         device_file = device_folder + '/w1_slave'
@@ -189,14 +195,13 @@ def iniciaSensorTemp():
         return device_file
     except RuntimeError as error:
         print('Sensor temperatura erro21', error.args[0])
-        display_temp.show('er21')
+        set_display_temp('er21', 'T')
         capture_exception(error)
         return False
     except Exception as error:
         print('Sensor temperatura erro2', error)
-        display_temp.show('err2')
+        set_display_temp('err2', 'T')
         capture_exception(error)
-        # sys.exit()
         time.sleep(5)
         return False
 
@@ -335,7 +340,7 @@ def PulaEtapa(channel):
         print(f"erro ao atualizar configuração: {error}")
         capture_exception(error)
     try:
-        if configFaixa.etapa == 'Padrão':
+        if configFaixa.etapa == 'Personalizada':
             configFaixa.etapa = 'Amarelação'
             GPIO.output(21, True)  # Acende o LED 1
             GPIO.output(5, False)  # Acende o LED 2
@@ -360,7 +365,7 @@ def PulaEtapa(channel):
             GPIO.output(6, False)  # Acende o LED 3
             GPIO.output(13, True)  # Acende o LED 4
         elif configFaixa.etapa == 'Secagem do Talo':
-            configFaixa.etapa = 'Padrão'
+            configFaixa.etapa = 'Personalizada'
             GPIO.output(21, False)  # Apaga o LED 1
             GPIO.output(5, False)  # Apaga o LED 2
             GPIO.output(6, False)  # Apaga o LED 3
@@ -399,7 +404,7 @@ def verificaLedEtapa(etapa_faixa):
             GPIO.output(5, False)  # Acende o LED 2
             GPIO.output(6, False)  # Acende o LED 3
             GPIO.output(13, True)  # Acende o LED 4
-        elif etapa_faixa == 'Padrão':
+        elif etapa_faixa == 'Personalizada':
             GPIO.output(21, False)  # Acende o LED 1
             GPIO.output(5, False)  # Acende o LED 2
             GPIO.output(6, False)  # Acende o LED 3
@@ -413,19 +418,17 @@ def verificaLedEtapa(etapa_faixa):
         capture_exception(error)
         print('erro no acender led etapa', error)       
 
-# Login_livre(1)
-
 try:
     # Executa as funções para desligar  sistema raspbian.
     #GPIO18 BOTÃO PULAR ETAPA
     GPIO.setup(16, GPIO.IN, pull_up_down=GPIO.PUD_UP) #ou 18 ou 21
-    GPIO.add_event_detect(16, GPIO.FALLING, callback=Login_livre, bouncetime=200)
+    GPIO.add_event_detect(16, GPIO.FALLING, callback=Login_livre, bouncetime=600)
 
     #GPIO.setup(18, GPIO.IN, pull_up_down=GPIO.PUD_UP)
     #GPIO.add_event_detect(18, GPIO.FALLING, callback=Desligar, bouncetime=2000)
 
     GPIO.setup(19, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-    GPIO.add_event_detect(19, GPIO.FALLING, callback=PulaEtapa, bouncetime=200)
+    GPIO.add_event_detect(19, GPIO.FALLING, callback=PulaEtapa, bouncetime=400)
 except RuntimeError as error:
     print('Erro na função de desligamento e liberar login', error.args[0])
     capture_exception(error)
@@ -457,14 +460,14 @@ def iniciaSHT():
     except RuntimeError as error:
         # Errors happen fairly often, DHT's are hard to read, just keep going
         print('Sensor umidade erro26', error.args[0])
-        display_humid.show('er26')
+        set_display_umid('er26')
         time.sleep(2)
         capture_message('erro sensor sht 26')
         return False
     except Exception as error:
         print('Sensor umidade erro2', error)
         capture_message('erro sensor sht 2')
-        display_humid.show('err2')
+        set_display_umid('err2')
         return False
 
 
@@ -475,26 +478,16 @@ def main():
         DS18B20status = True
     except Exception as error:
         DS18B20status = False
-        display_temp.show('er22')
+        set_display_temp('er22', 'T')
     global SHTstatus
     time.sleep(3)
     try:
         sensor = iniciaSHT()
-        #print('sensor:'+sensor)
         SHTstatus = True
     except Exception as error:
         print('err25', error)
         SHTstatus = False
-        ##display_humid.show('er25')
-    print(str(SHTstatus))
-    speaker_alerta(True)
-    time.sleep(0.2)
-    speaker_alerta(False)
-    time.sleep(0.7)
-    speaker_alerta(True)
-    time.sleep(0.3)
-    speaker_alerta(False)
-    time.sleep(1.0)
+
     global configFaixa
     global configGeral
     global contadorTemp
@@ -503,8 +496,19 @@ def main():
     try:
         configGeral = service.getLocalConfigGeral(bd_conf)
         configFaixa = service.getLocalConfigFaixa(bd_conf)
+        print('print geral', configGeral.speaker)
         verificaLedEtapa(configFaixa.etapa)
         contadorTemp = configGeral.intervalo_seconds/2
+
+        print(str(SHTstatus))
+        speaker_alerta(True, configGeral.speaker)
+        time.sleep(0.2)
+        speaker_alerta(False, configGeral.speaker)
+        time.sleep(0.7)
+        speaker_alerta(True, configGeral.speaker)
+        time.sleep(0.3)
+        speaker_alerta(False, configGeral.speaker)
+        time.sleep(1.0)
     except Exception as error :
         capture_exception(error)
         print('erro 501', error)
@@ -544,14 +548,14 @@ def main():
     except RuntimeError as error:
         print('Sensor temperatura erro4', error.args[0])
         capture_exception(error)
-        display_temp.show('err4')
+        set_display_temp('err4', 'T')
         time.sleep(2)
         temperatura_fahrenheit = 0
         temperatura_celcius = 0
     except Exception as error:
         print('Sensor temperatura erro3', error)
         capture_exception(error)
-        display_temp.show('err3')
+        set_display_temp('err3', 'T')
         time.sleep(5)
         temperatura_fahrenheit = 0
         temperatura_celcius = 0
@@ -581,26 +585,17 @@ def main():
                 temperatura_celcius = round(temperature_DS18B20[0],1)
                 temperatura_fahrenheit = round(temperature_DS18B20[1],1)
                 set_display_temp(temperature_DS18B20[1], configGeral.escala_temp)
-
-                if configGeral.escala_temp == 'F':
-                    if int(temperature_DS18B20[1]) > 99:
-                        display_temp.show(str(str(int(temperature_DS18B20[1])) + 'F'))
-                    else:
-                        display_temp.show(str(str(int(temperature_DS18B20[1])) + '*F'))
-                else:
-                    display_temp.temperature(int(temperature_DS18B20[0]))
             except RuntimeError as error:
                 capture_message('erro sensor DS18B20 5')
-                #message(error)
                 print('Sensor temperatura erro5', error.args[0])
-                display_temp.show('err5')
+                set_display_temp('err5', 'T')
                 time.sleep(2)
                 temperatura_fahrenheit = 0
                 temperatura_celcius = 0
             except Exception as error:
                 capture_message('erro sensor DS18B20 6')
                 print('Sensor temperatura erro6', error)
-                display_temp.show('err6')
+                set_display_temp('err6', 'T')
                 time.sleep(5)
                 temperatura_fahrenheit = 0
                 temperatura_celcius = 0
@@ -626,17 +621,17 @@ def main():
                 temperaturaSHT_fahrenheit = round(float(sensor.temperature * (9 / 5) + 32),2)
                 humidade = round(sensor.relative_humidity,1)
                 #display_humid.show(str('U '+str(int(sensor.relative_humidity))))
-                set_display_umid(sensor.relative_humidity)
+                set_display_umid(int(sensor.relative_humidity))
             except RuntimeError as error:
                 capture_message('erro sensor sht 5')
                 print('erro5', error.args[0])
-                display_humid.show('err5')
+                set_display_umid('err5')
                 humidade = 0
                 time.sleep(5)
             except Exception as error:
                 capture_message('erro sensor sht 6')
                 print('erro6', error)
-                display_humid.show('err6')
+                set_display_umid('err6')
                 time.sleep(5)
                 humidade = 0
 
@@ -708,27 +703,23 @@ def main():
         #verificador de inicialização dos sensores
         try:
             if vr % 2 == 0:
-                GPIO.output(26, True)
                 if not DS18B20status:
                     try:
                         device_file = iniciaSensorTemp()
                         DS18B20status = True
                     except Exception as error:
-                        capture_exception(error)
+                        capture_message('sensor temp não iniciado')
                         DS18B20status = False
-                        display_temp.show('er23')
+                        set_display_temp('er23', 'T')
                 #if not SHTstatus:
                 if not sensor:
                     try:
                         sensor = iniciaSHT()
                         SHTstatus = True
                     except Exception as error:
-                        capture_exception(error)
+                        capture_message('sensor umidade não iniciado')
                         SHTstatus = False
-                        display_humid.show('er27')
-                #print(SHTstatus)
-            else :
-                GPIO.output(26, False)
+                        set_display_temp('er27', 'T')
         except Exception as error:
             capture_exception(error)
             print('erro no  if vr % 2 == 0:', error)
@@ -737,52 +728,32 @@ def main():
         #    print('implementar lógica para pular etapa pq expirou')
         
         #em produção trocar para 10min
-        if alerta_vr > 0 and configFaixa.updated < str(datetime.now() - timedelta(minutes=1)): 
+        if alerta_vr > 0 and configFaixa.updated < str(datetime.now() - timedelta(minutes=1)):
             if alerta_sonoro_contador > 3:
                 contador = 0
                 while (contador < 4):
                     contador += 1
-                    speaker_alerta(True)
+                    speaker_alerta(True, configGeral.speaker)
                     time.sleep(1.4)
                     if alerta_vr == 11 or alerta_vr == 44 or alerta_vr == 47: #temp alta
-                        display_temp.show(str('----'))
-                        speaker_alerta(False)
+                        set_display_temp(str('----'), 'T')
+                        speaker_alerta(False, configGeral.speaker)
                     elif alerta_vr == 12 or alerta_vr == 45 or alerta_vr == 48: #temp baixa
-                        display_temp.show('-   ')
-                        speaker_alerta(False)
+                        set_display_temp(str('-   '), 'T')
+                        speaker_alerta(False, configGeral.speaker)
                     if alerta_vr == 33 or alerta_vr == 44 or alerta_vr == 45: #umid alta
-                        display_humid.show(str('----'))
-                        speaker_alerta(False)
+                        set_display_umid(str('----'))
+                        speaker_alerta(False, configGeral.speaker)
                     elif alerta_vr == 36 or alerta_vr == 47 or alerta_vr == 48:  # umid baixa
-                        display_humid.show(str('-   '))
-                        speaker_alerta(False)
-
+                        set_display_umid(str('-   '))
+                        speaker_alerta(False, configGeral.speaker)
                     time.sleep(0.6)
                     if sensor:
-                        set_display_umid(sensor.relative_humidity)
+                        set_display_umid(int(sensor.relative_humidity))
                     set_display_temp(temperature_DS18B20[1], configGeral.escala_temp)
 
             else:
-                time.sleep(2)
-                try:
-                    if vr % 2 == 0:
-                        GPIO.output(26, False)
-                    else:
-                        GPIO.output(26, True)
-                except Exception as error:
-                    capture_exception(error)
-                    print('erro no led status')
-                time.sleep(2)
-                set_led_run(vr % 2) #excluir linhas abaixo
-                try:
-                    if vr % 2 == 0:
-                        GPIO.output(26, True)
-                    else:
-                        GPIO.output(26, False)
-                except Exception as error:
-                    capture_exception(error)
-                    print('erro no led status')
-                time.sleep(2)
+                time.sleep(6)
             alerta_sonoro_contador += 1
             configGeral = service.getLocalConfigGeral(bd_conf)
             configFaixa = service.getLocalConfigFaixa(bd_conf)
@@ -798,27 +769,9 @@ def main():
                 configGeral = service.getLocalConfigGeral(bd_conf)
                 configFaixa = service.getLocalConfigFaixa(bd_conf)
                 verificaLedEtapa(configFaixa.etapa)
-                #print(f"config Faixa'{configFaixa.etapa}'")
-            time.sleep(2)
-            try:
-                if vr % 2 == 0:
-                    GPIO.output(26, False)
-                else:
-                    GPIO.output(26, True)
-            except Exception as error:
-                capture_exception(error)
-                print('erro no led status')
-            time.sleep(2)
-            set_led_run(vr % 2)
-            try:
-                if vr % 2 == 0:
-                    GPIO.output(26, True)
-                else:
-                    GPIO.output(26, False)
-            except Exception as error:
-                capture_exception(error)
-                print('erro no led status')
-            time.sleep(2)
+            time.sleep(6)
+        set_led_run(vr % 2)
+
 
 
 

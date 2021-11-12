@@ -30,7 +30,7 @@ def criandoSQLiteConf(b):
           cursor.execute("INSERT INTO config (etapa, intervalo_seconds, temp_min, temp_max, umid_ajuste, escala_temp, alerta_desat, speaker, status, obs) "
                          "VALUES ('Secagem do Talo', 200, 141.0, 165.0, 1, 'F', 0, 0, 0, 'Configuração padrão')")
           cursor.execute("INSERT INTO config (etapa, intervalo_seconds, temp_min, temp_max, umid_ajuste, escala_temp, alerta_desat, speaker, status, obs) "
-                         "VALUES ('Padrão', 200, 67.2, 90.0, 1, 'F', 0, 0, 1, 'Configuração padrão')")
+                         "VALUES ('Personalizada', 200, 67.2, 90.0, 1, 'F', 0, 0, 1, 'Configuração padrão')")
           #cursor.execute('''CREATE TABLE alerta (id_alerta integer PRIMARY KEY AUTOINCREMENT NOT NULL, descricao text, confirmado text, temperatura real, umidade real, createdDATE DEFAULT (datetime('now','localtime')) NOT NULL)''')
           # cursor.execute("INSERT INTO medicao VALUES (1, 20.4, 89.3,'2006-01-05', 0, 'sem alerta')")
           con.commit()
