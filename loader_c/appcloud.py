@@ -136,13 +136,13 @@ def verify_firmware():
 def main():
     sio = socketio.Client()
     global contador
-    contador = 400
+    contador = 490
     global contador2
     contador2 = 9
     global contador3
     global contador_media
     contador_media = 3
-    contador3 = 20
+    contador3 = 22
     global medicoes
     medicoes = []
     global filtro

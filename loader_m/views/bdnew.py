@@ -21,12 +21,12 @@ def criandoSQLiteConf(b):
           cursor.execute('''CREATE TABLE usuario (login text, senha text, nome text, telefone text, email text, privilegios text)''')
           cursor.execute("INSERT INTO usuario VALUES ('montabaco', '4444', 'Montabaco','333333', 't@t.com', 'adm')")
 
-          cursor.execute('''CREATE TABLE config (id_config integer PRIMARY KEY AUTOINCREMENT NOT NULL, etapa text, intervalo_seconds integer , temp_min real , temp_max real, umid_ajuste integer, escala_temp text, obs text, alerta_desat text, speaker integer, status integer, updated DATE DEFAULT (datetime('now','localtime')) NOT NULL, expiration DATE DEFAULT (datetime('now','localtime')) NOT NULL)''')
-          cursor.execute("INSERT INTO config (etapa, intervalo_seconds, temp_min, temp_max, umid_ajuste, escala_temp, alerta_desat, speaker, status, obs) "
-                         "VALUES ('Padrão', 200, 90.0, 100.0, 1, 'F', 0, 0, 0, 'Configuração padrão')")
+          cursor.execute('''CREATE TABLE config (id_config integer PRIMARY KEY AUTOINCREMENT NOT NULL, nome text, etapa text, intervalo_seconds integer , temp_min real , temp_max real, umid_ajuste integer, escala_temp text, obs text, alerta_desat text, speaker integer, status integer, updated DATE DEFAULT (datetime('now','localtime')) NOT NULL, expiration DATE DEFAULT (datetime('now','localtime')) NOT NULL)''')
+          cursor.execute("INSERT INTO config (nome, etapa, intervalo_seconds, temp_min, temp_max, umid_ajuste, escala_temp, alerta_desat, speaker, status, obs) "
+                         "VALUES ('Estufa 1', 'Padrão', 200, 90.0, 100.0, 1, 'F', 0, 0, 0, 'Configuração padrão')")
 
           cursor.execute(
-              '''CREATE TABLE etapa (id_etapa integer PRIMARY KEY AUTOINCREMENT NOT NULL, etapa text, intervalo_seconds integer , temp_min real , temp_max real, umid_min real , umid_max real umid_ajuste integer, escala_temp text, obs text, alerta_desat text, speaker integer, status integer, updated DATE DEFAULT (datetime('now','localtime')) NOT NULL, expiration DATE DEFAULT (datetime('now','localtime')) NOT NULL)''')
+              '''CREATE TABLE etapa (id_etapa integer PRIMARY KEY AUTOINCREMENT NOT NULL, etapa text, intervalo_seconds integer , temp_min real , temp_max real, umid_min real , umid_max real, umid_ajuste integer, escala_temp text, obs text, alerta_desat text, speaker integer, status integer, updated DATE DEFAULT (datetime('now','localtime')) NOT NULL, expiration DATE DEFAULT (datetime('now','localtime')) NOT NULL)''')
           cursor.execute(
               "INSERT INTO etapa (etapa, intervalo_seconds, temp_min, temp_max, umid_min, umid_max, umid_ajuste, escala_temp, alerta_desat, speaker, status, obs) "
               "VALUES ('Amarelação', 200, 90.0, 100.0, 83, 98, 1, 'F', 0, 0, 0, 'Configuração padrão')")
@@ -46,36 +46,8 @@ def criandoSQLiteConf(b):
           con.commit()
           con.close()
      except Exception as e:
-          print('Erro consultar BD getLocalConfigFaixa', e)
+          print('Erro consultar BD criandoSQLiteConf', e)
 
-
-
-def criandoSQLiteEtapa(b):
-    try:
-        con = sqlite3.connect(b)
-        print('criando o BD')
-        cursor = con.cursor()
-        cursor.execute(
-            '''CREATE TABLE etapa (id_etapa integer PRIMARY KEY AUTOINCREMENT NOT NULL, etapa text, intervalo_seconds integer , temp_min real , temp_max real, umid_min real , umid_max real umid_ajuste integer, escala_temp text, obs text, alerta_desat text, speaker integer, status integer, updated DATE DEFAULT (datetime('now','localtime')) NOT NULL, expiration DATE DEFAULT (datetime('now','localtime')) NOT NULL)''')
-        cursor.execute(
-            "INSERT INTO etapa (etapa, intervalo_seconds, temp_min, temp_max, umid_min, umid_max, umid_ajuste, escala_temp, alerta_desat, speaker, status, obs) "
-            "VALUES ('Amarelação', 200, 90.0, 100.0, 83, 98, 1, 'F', 0, 0, 0, 'Configuração padrão')")
-        cursor.execute(
-            "INSERT INTO etapa (etapa, intervalo_seconds, temp_min, temp_max, umid_min, umid_max, umid_ajuste, escala_temp, alerta_desat, speaker, status, obs) "
-            "VALUES ('Murchamento', 200, 101.0, 120.0, 45, 81, 1, 'F', 0, 0, 0, 'Configuração padrão')")
-        cursor.execute(
-            "INSERT INTO etapa (etapa, intervalo_seconds, temp_min, temp_max, umid_min, umid_max, umid_ajuste, escala_temp, alerta_desat, speaker, status, obs) "
-            "VALUES ('Secagem da Lâmina', 200, 121.0, 140.0, 25, 44, 1, 'F', 0, 0, 0, 'Configuração padrão')")
-        cursor.execute(
-            "INSERT INTO etapa (etapa, intervalo_seconds, temp_min, temp_max, umid_min, umid_max, umid_ajuste, escala_temp, alerta_desat, speaker, status, obs) "
-            "VALUES ('Secagem do Talo', 200, 141.0, 165.0, 10, 25, 1, 'F', 0, 0, 0, 'Configuração padrão')")
-        cursor.execute(
-            "INSERT INTO etapa (etapa, intervalo_seconds, temp_min, temp_max, umid_min, umid_max, umid_ajuste, escala_temp, alerta_desat, speaker, status, obs) "
-            "VALUES ('Personalizada', 200, 67.2, 90.0, 50, 90, 1, 'F', 0, 0, 1, 'Configuração padrão')")
-        con.commit()
-        con.close()
-    except Exception as e:
-        print('Erro consultar BD getLocalConfigFaixa', e)
 
 def criandoSQLiteMonitorSys(b):
      try:

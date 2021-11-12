@@ -6,7 +6,6 @@ import board
 import RPi.GPIO as GPIO
 
 from views import service
-from views import bdnew
 
 global ns
 ns = service.getserial()
@@ -27,9 +26,6 @@ try:
 except Exception as e:
     print("erro sentry.conf")
     capture_exception(e)
-
-
-
 
 
 import threading #https://www.tutorialspoint.com/python3/python_multithreading.htm
@@ -100,6 +96,7 @@ bd = '/etc/loader/load/loader_banco.db'
 bd_conf = '/etc/loader/load/conf_banco.db'
 bd_umid = '/etc/loader/load/umid_banco.db' #tabela de umidade para referencia 
 bd_monitor = '/etc/loader/load/monitor_banco4.db' #para armazenar dados do sistema - temp cpu
+
 
 #inicializando SOCKET
 import socketio
