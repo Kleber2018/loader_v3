@@ -463,7 +463,7 @@ def alertasperiodo():
 @app.route('/apiconfig', methods=['GET'])
 def apiconfig():
     try:
-        configui = getLocalConfigGeral()
+        configui = configRetorno()
         return jsonify(configui)
     except Exception as e:
         capture_exception(e)
