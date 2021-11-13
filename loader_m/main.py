@@ -136,7 +136,7 @@ def speaker_alerta(stat, vr):#se retornar 1 é pq está habilitado o alerta
         capture_exception(error)
 
 global login_livre_status
-login_livre_status = 21
+login_livre_status = 41
 
 def set_display_temp(val, tipo):
     global login_livre_status

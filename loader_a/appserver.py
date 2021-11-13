@@ -102,6 +102,9 @@ class ConfigEtapa:
         self.expiration = expiration
         self.obs = obs
         self.id_etapa = id_etapa
+    def toJSON(self):
+        return json.dumps(self, default=lambda o: o.__dict__, 
+            sort_keys=True, indent=4)
 
 from views import auth
 
@@ -470,7 +473,7 @@ def apiconfig():
 @app.route('/apiconfigetapa', methods=['GET'])
 def apietapaconfig():
     try:
-        configEtapa = getLocalConfigEtapa()
+        configEtapa = configRetornoEtapa()
         return jsonify(configEtapa)
     except Exception as e:
         capture_exception(e)
@@ -480,7 +483,7 @@ def apietapaconfig():
 @app.route('/apiconfiggeral', methods=['GET'])
 def apiconfiggeral():
     try:
-        configui = getLocalConfigGeral()
+        configui = configRetorno()
         return jsonify(configui)
     except Exception as e:
         capture_exception(e)
@@ -491,24 +494,59 @@ def configRetorno():
         conn = sqlite3.connect(bd_conf)
         cur = conn.cursor()
         cur.execute(
-            "SELECT etapa, intervalo_seconds, temp_min, temp_max, umid_ajuste, escala_temp, alerta_desat, speaker, updated, obs "
+            "SELECT nome,  etapa, intervalo_seconds, temp_min, temp_max, umid_ajuste, escala_temp, alerta_desat, speaker, updated, obs "
             "FROM config WHERE id_config = 1")
         configs = []
-        for etapa, intervalo_seconds, temp_min, temp_max, umid_ajuste, escala_temp, alerta_desat, speaker, updated, obs in cur:
+        for nome, etapa, intervalo_seconds, temp_min, temp_max, umid_ajuste, escala_temp, alerta_desat, speaker, updated, obs in cur:
             configs.append(
-                {'etapa': etapa,
-                 'intervalo_seconds': int(intervalo_seconds),
-                 'temp_min': float(temp_min),
-                 'temp_max': float(temp_max),
-                 'umid_ajuste': umid_ajuste,
-                 'escala_temp': escala_temp,
-                 'alerta_desat': alerta_desat,
-                 'speaker': speaker,
-                 'updated': f"{updated}",
-                 'obs': obs})
+                {'nome' : nome,
+                'etapa': etapa,
+                'intervalo_seconds': int(intervalo_seconds),
+                'temp_min': float(temp_min),
+                'temp_max': float(temp_max),
+                'umid_ajuste': umid_ajuste,
+                'escala_temp': escala_temp,
+                'alerta_desat': alerta_desat,
+                'speaker': speaker,
+                'updated': f"{updated}",
+                'obs': obs})
         cur.close()
         conn.close()
         return configs[0]
+    except Exception as e:
+        capture_exception(e)
+        print(f"Erro SQLite: {e}")
+        return {'erro': f"{e}"}
+
+def configRetornoEtapa():
+    try:
+        conn = sqlite3.connect(bd_conf)
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT  temp_min, temp_max, umid_ajuste, etapa, updated, expiration, intervalo_seconds, id_etapa, obs FROM etapa WHERE status = 1")
+
+        configs = []
+        for temp_min, temp_max, umid_ajuste, etapa, updated, expiration, intervalo_seconds, id_etapa, obs  in cur:
+            configs.append(
+                {'id_etapa' : id_etapa,
+                'etapa': etapa,
+                'intervalo_seconds': int(intervalo_seconds),
+                'temp_min': float(temp_min),
+                'temp_max': float(temp_max),
+                'umid_ajuste': umid_ajuste,
+                'expiration': expiration,
+                'updated': f"{updated}",
+                'obs': obs})
+
+        if len(configs) > 0:
+            cur.close()
+            conn.close()
+            return configs[0]
+        else:
+            cur.execute("UPDATE etapa SET status = 1 WHERE id_config = 5;")
+            conn.close()
+            return {'erro': f"Erro: Tente novamente"}
+        
     except Exception as e:
         capture_exception(e)
         print(f"Erro SQLite: {e}")
@@ -526,12 +564,12 @@ def getLocalConfigEtapa():
         if len(rows) > 0:
             con.close()
             return ConfigEtapa(float(rows[0][0]), float(rows[0][1]), int(rows[0][2]), rows[0][3], rows[0][4],
-                               rows[0][5], rows[0][6], rows[0][7], rows[0][8])
+                               rows[0][5], rows[0][6], rows[0][7], rows[0][8]).toJSON()
         else:
             cursor.execute(
                 "SELECT  temp_min, temp_max, umid_ajuste, etapa, updated, expiration, intervalo_seconds, id_etapa, obs FROM etapa WHERE id_config = 5;")
             rows = cursor.fetchall()
-            cursor.execute("UPDATE config SET status = 1 WHERE id_config = 5;")
+            cursor.execute("UPDATE etapa SET status = 1 WHERE id_config = 5;")
             con.close()
             return ConfigEtapa(float(rows[0][0]), float(rows[0][1]), int(rows[0][2]), rows[0][3], rows[0][4],
                                rows[0][5], rows[0][6], rows[0][7], rows[0][8])
@@ -833,6 +871,8 @@ def salvarconfig():
 def apisalvarconfig():
     try:
         if 'token' in request.json:
+            print('teste2')
+            print(request.json['token'])
             return_token = auth.verify_autentication_api(request.json['token'])
             if 'autenticado' in return_token:
                 print('autenticado')
@@ -863,20 +903,26 @@ def apisalvarconfig():
             capture_exception(e)
             alerta_desat = 0
             speaker = 0
+        try: #corrigir depois de implementar campos no app
+            nome = request.json['config']['nome']
+        except Exception as e:
+            capture_exception(e)
+            nome = 'Estufa 1'
 
         obs = request.json['config']['obs']
         etapa = request.json['config']['etapa']
 
     except Exception as e:
         capture_exception(e)
-        print(f"Erro SQLite 585: {e}")
+        print(f"Erro 919: {e}")
         return jsonify({'retorno': f"{e}"})
     try:
         conn = sqlite3.connect(bd_conf)
         cur = conn.cursor()
         cur.execute(
-            "UPDATE config SET etapa = ?, intervalo_seconds= ?, temp_min = ?, temp_max = ?, umid_ajuste = ?, escala_temp = ?, alerta_desat = ?, speaker = ?, updated = datetime('now'), obs = ? WHERE id_config = 1;",
+            "UPDATE config SET nome = ?, etapa = ?, intervalo_seconds= ?, temp_min = ?, temp_max = ?, umid_ajuste = ?, escala_temp = ?, alerta_desat = ?, speaker = ?, updated = datetime('now'), obs = ? WHERE id_config = 1;",
             (
+                nome,
                 etapa,
                 intervalo,
                 temp_min,
@@ -897,11 +943,13 @@ def apisalvarconfig():
         print(f"Erro SQLite: {e}")
         return jsonify({'retorno': f"{e}"})
 
-@app.route('/apiupdetapa', methods=['POST', ])
-def apiupdetapa():
+@app.route('/apisalvaretapa', methods=['POST', ])
+def apisalvaretapa():
     try:
         if 'token' in request.json:
+
             return_token = auth.verify_autentication_api(request.json['token'])
+
             if 'autenticado' in return_token:
                 print('autenticado')
             else:
@@ -1056,7 +1104,7 @@ def apiocultarmedicoes():
 if __name__ == "__main__":
     debug = True  # com essa opção como True, ao salvar, o "site" recarrega automaticamente.
     try:
-        app.run(host='0.0.0.0', debug=debug, port=5003)
+        app.run(host='0.0.0.0', debug=debug, port=5000)
         #app.run()
     except Exception as e:
         capture_exception(e) 
