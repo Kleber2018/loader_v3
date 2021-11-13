@@ -871,15 +871,16 @@ def salvarconfig():
 def apisalvarconfig():
     try:
         if 'token' in request.json:
-            print('teste2')
-            print(request.json['token'])
+
             return_token = auth.verify_autentication_api(request.json['token'])
+
             if 'autenticado' in return_token:
                 print('autenticado')
             else:
                 return jsonify({'erro': 'Necessario estar logado!'})
         else:
             return jsonify({'erro': 'Necessario estar logado!'})
+        print('salvando')
         if request.json['config']['intervalo_seconds'] < 60:
             intervalo = 60
         else:
@@ -957,6 +958,7 @@ def apisalvaretapa():
         else:
             return jsonify({'erro': 'Necessario estar logado!'})
 
+
         try:  # corrigir depois de implementar campos no app
             intervalo = 60
             if request.json['config']['intervalo_seconds'] < 60:
@@ -996,7 +998,7 @@ def apisalvaretapa():
         conn = sqlite3.connect(bd_conf)
         cur = conn.cursor()
         cur.execute(
-            "UPDATE etapa SET etapa = ?, intervalo_seconds= ?, temp_min = ?, temp_max = ?, umid_ajuste = ?, escala_temp = ?, alerta_desat = ?, speaker = ?, updated = datetime('now'), obs = ? WHERE id_config = ?;",
+            "UPDATE etapa SET etapa = ?, intervalo_seconds= ?, temp_min = ?, temp_max = ?, umid_ajuste = ?, escala_temp = ?, alerta_desat = ?, speaker = ?, updated = datetime('now'), obs = ? WHERE id_etapa = ?;",
             (
                 etapa,
                 intervalo,
