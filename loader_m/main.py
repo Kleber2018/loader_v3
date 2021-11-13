@@ -325,7 +325,7 @@ def PulaEtapa(channel):
         print('atualizando etapa')
         cursor = con.cursor()
         cursor.execute(
-            "SELECT id_config FROM etapa WHERE status = 1")
+            "SELECT id_etapa FROM etapa WHERE status = 1")
         id_c  = 1
         rows = cursor.fetchall()
         if len(rows) > 0:
@@ -334,7 +334,7 @@ def PulaEtapa(channel):
             id_c = 1
         print(((str(id_c)), str(datetime.now())))
         cursor.execute("UPDATE etapa SET status = 0, updated = ? WHERE status = 1;", (str(datetime.now()),))
-        cursor.execute("UPDATE etapa SET status = 1, updated = ? WHERE id_config = ?;", (str(datetime.now()), str(id_c)))
+        cursor.execute("UPDATE etapa SET status = 1, updated = ? WHERE id_etapa = ?;", (str(datetime.now()), str(id_c)))
         con.commit()
         con.close()
     except Exception as error:
@@ -765,11 +765,13 @@ def main():
         else:
             alerta_sonoro_contador = 0
             vr = vr+1
+            if vr % 2 == 0:
+                verificaLedEtapa(configFaixa.etapa)
+
             if vr > 5 :
                 vr = 0
                 configGeral = service.getLocalConfigGeral(bd_conf)
                 configFaixa = service.getLocalConfigFaixa(bd_conf)
-                verificaLedEtapa(configFaixa.etapa)
             time.sleep(6)
         set_led_run(vr % 2)
 
