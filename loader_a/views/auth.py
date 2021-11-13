@@ -205,8 +205,9 @@ def verify_autentication_api(token):
         print(f"Erro SQLite: {e}")
         return {'erro': f"Erro BD: {e}", 'description': 'Erro no banco de dados, reinicie a central!'}
 
-def button_login(user, senha):
+def button_login(user, senha, bd):
     try:
+        from datetime import datetime, timedelta
         arquivo = open('/etc/loader/load/login_livre.conf', 'r')
         horario = arquivo.readline()
         arquivo.close()
@@ -216,7 +217,7 @@ def button_login(user, senha):
         print(agora > hora_login_livre, hora_login_livre+timedelta(minutes = 3) > agora)
         if agora > hora_login_livre and hora_login_livre+timedelta(minutes = 3) > agora:
             try:
-                conn = sqlite3.connect(bd_conf)
+                conn = sqlite3.connect(bd)
                 cur = conn.cursor()
                 cur.execute("INSERT INTO usuario(login, senha, nome, telefone, email, privilegios) VALUES (?, ?, ?, '', '', 'default');", ( user, senha, user ))
                 conn.commit()

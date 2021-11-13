@@ -136,14 +136,14 @@ def speaker_alerta(stat, vr):#se retornar 1 é pq está habilitado o alerta
         capture_exception(error)
 
 global login_livre_status
-login_livre_status = 41
+login_livre_status = 11
 
 def set_display_temp(val, tipo):
     global login_livre_status
     #tipo: C:celcius, F: fahrenheit, T: texto
     #val: em fahrenheit
     try:
-        if login_livre_status > 40:
+        if login_livre_status > 10:
             if tipo == 'F':
                 if int(val) > 99:
                     display_temp.show(str(str(int(val)) + 'F'))
@@ -164,7 +164,7 @@ def set_display_umid(val):
     global login_livre_status
     #val: em %
     try:
-        if login_livre_status > 40:
+        if login_livre_status > 10:
             if not str(val).isdigit(): #não numero
                 display_humid.show(val)
             else:
@@ -765,15 +765,16 @@ def main():
         else:
             alerta_sonoro_contador = 0
             vr = vr+1
-            if vr % 2 == 0:
+            if vr % 2:
+                configGeral = service.getLocalConfigGeral(bd_conf)
+                configFaixa = service.getLocalConfigFaixa(bd_conf)
                 verificaLedEtapa(configFaixa.etapa)
 
             if vr > 5 :
                 vr = 0
-                configGeral = service.getLocalConfigGeral(bd_conf)
-                configFaixa = service.getLocalConfigFaixa(bd_conf)
             time.sleep(6)
         set_led_run(vr % 2)
+
 
 
 

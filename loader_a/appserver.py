@@ -671,7 +671,13 @@ def autenticar():
         proxima_pagina = request.form['proxima']
         return redirect(proxima_pagina)
     else:
-        insert_valida = auth.button_login(request.json['user'].lower(), request.json['senha'].lower())
+        try:
+            login = request.form['login'],
+            senha = request.form['senha'],
+            insert_valida = auth.button_login(login[0].lower(), senha[0].lower(), bd_conf)
+        except Exception as e:
+            print("erro"  , e)
+
         if insert_valida == 1:
             try:
                 conn = sqlite3.connect(bd_conf)
@@ -738,7 +744,7 @@ def loginapi():
                 retornoj = jsonify(login_retorno)
                 if 'erro' in retornoj.json:
                     print("verificar se existe")
-                    insert_valida = auth.button_login(request.json['user'].lower(), request.json['senha'].lower())
+                    insert_valida = auth.button_login(request.json['user'].lower(), request.json['senha'].lower(), bd_conf)
                     if insert_valida == 1:
                         login_retorno = auth.autentication_api(request.json['user'], request.json['senha'])
                         return jsonify(login_retorno)
@@ -885,16 +891,20 @@ def apisalvarconfig():
             intervalo = 60
         else:
             intervalo = request.json['config']['intervalo_seconds']
-        try:  # corrigir depois de implementar campos no app
-            temp_min = request.json['config']['temp_min']
-            temp_max = request.json['config']['temp_max']
-            umid_ajuste = request.json['config']['umid_ajuste']
+        
+        try: #corrigir depois de implementar campos no app
             escala_temp = request.json['config']['escala_temp']
         except Exception as e:
             capture_exception(e)
-            temp_max = 0
-            umid_ajuste = 0
+            nome = 'Estufa 1'
             escala_temp = 'F'
+
+        try:  # corrigir depois de implementar campos no app
+            umid_ajuste = request.json['config']['umid_ajuste']
+        except Exception as e:
+            capture_exception(e)
+            umid_ajuste = 0
+
         alerta_desat = 0
         speaker = 0
         try: #corrigir depois de implementar campos no app
@@ -911,7 +921,13 @@ def apisalvarconfig():
             nome = 'Estufa 1'
 
         obs = request.json['config']['obs']
-        etapa = request.json['config']['etapa']
+
+        try: #corrigir depois de implementar campos no app
+            etapa = request.json['config']['etapa']
+        except Exception as e:
+            capture_exception(e)
+            etapa = 'Personalizada'
+
 
     except Exception as e:
         capture_exception(e)
@@ -921,13 +937,11 @@ def apisalvarconfig():
         conn = sqlite3.connect(bd_conf)
         cur = conn.cursor()
         cur.execute(
-            "UPDATE config SET nome = ?, etapa = ?, intervalo_seconds= ?, temp_min = ?, temp_max = ?, umid_ajuste = ?, escala_temp = ?, alerta_desat = ?, speaker = ?, updated = datetime('now'), obs = ? WHERE id_config = 1;",
+            "UPDATE config SET nome = ?, etapa = ?, intervalo_seconds= ?, umid_ajuste = ?, escala_temp = ?, alerta_desat = ?, speaker = ?, updated = datetime('now'), obs = ? WHERE id_config = 1;",
             (
                 nome,
                 etapa,
                 intervalo,
-                temp_min,
-                temp_max,
                 umid_ajuste,
                 escala_temp,
                 alerta_desat,
@@ -977,28 +991,38 @@ def apisalvaretapa():
             escala_temp = request.json['config']['escala_temp']
         except Exception as e:
             capture_exception(e)
+        
+        try:
+            id = request.json['config']['id']
+            etapa = request.json['config']['etapa']
+        except Exception as e:
+            capture_exception(e)
+            id = 5
+            etapa = 'Personalizada'
 
         try: #corrigir depois de implementar campos no app
             alerta_desat = 0
             speaker = 0
-            id = 5
             speaker = request.json['config']['speaker']
             alerta_desat = request.json['config']['alerta_desat']
-            id = request.json['config']['id']
+
         except Exception as e:
             capture_exception(e)
         obs = request.json['config']['obs']
-        etapa = request.json['config']['etapa']
+
 
     except Exception as e:
         capture_exception(e)
         print(f"Erro SQLite 585: {e}")
         return jsonify({'retorno': f"{e}"})
     try:
+        print('alterando id', id)
         conn = sqlite3.connect(bd_conf)
         cur = conn.cursor()
+        cur.execute("UPDATE etapa SET status = 0, updated = ? WHERE status = 1;", (str(datetime.now()),))
+        conn.commit()
         cur.execute(
-            "UPDATE etapa SET etapa = ?, intervalo_seconds= ?, temp_min = ?, temp_max = ?, umid_ajuste = ?, escala_temp = ?, alerta_desat = ?, speaker = ?, updated = datetime('now'), obs = ? WHERE id_etapa = ?;",
+            "UPDATE etapa SET status = 1, etapa = ?, intervalo_seconds= ?, temp_min = ?, temp_max = ?, umid_ajuste = ?, escala_temp = ?, alerta_desat = ?, speaker = ?, updated = ?, obs = ? WHERE id_etapa = ?;",
             (
                 etapa,
                 intervalo,
@@ -1008,6 +1032,7 @@ def apisalvaretapa():
                 escala_temp,
                 alerta_desat,
                 speaker,
+                str(datetime.now()),
                 obs,
                 id
             ))
