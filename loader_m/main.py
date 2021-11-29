@@ -231,6 +231,25 @@ class ConfigGeral:
         self.speaker = speaker
         self.etapa = etapa
 
+
+try:
+    # Executa as funções para desligar  sistema raspbian.
+    #GPIO18 BOTÃO PULAR ETAPA
+    GPIO.setup(16, GPIO.IN, pull_up_down=GPIO.PUD_UP) #ou 18 ou 21
+    GPIO.add_event_detect(16, GPIO.FALLING, callback=Login_livre, bouncetime=1500)
+
+    #GPIO.setup(18, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+    #GPIO.add_event_detect(18, GPIO.FALLING, callback=Desligar, bouncetime=2000)
+
+    GPIO.setup(19, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+    GPIO.add_event_detect(19, GPIO.FALLING, callback=PulaEtapa, bouncetime=1500)
+except RuntimeError as error:
+    print('Erro na função de desligamento e liberar login', error.args[0])
+    capture_exception(error)
+except Exception as error:
+    capture_exception(error)
+    print('Erro na função de desligamento e liberar login', error.args[0])
+
 # Função habilita os comandos quando os botões forem pressionados.
 global desligar
 desligar = 0
@@ -319,7 +338,8 @@ def Login_livre(channel):
 
 
 def PulaEtapa(channel):
-    print('Pular etapa')
+    capture_message('pula Etapa', etapa_faixa)
+   
     try:
         con = sqlite3.connect(bd_conf)
         print('atualizando etapa')
@@ -384,6 +404,7 @@ def PulaEtapa(channel):
 service.add_system_monitor(bd_monitor)
 
 def verificaLedEtapa(etapa_faixa):
+
     try:
         if etapa_faixa == 'Amarelação':
             GPIO.output(21, True)  # Acende o LED 1
@@ -419,23 +440,7 @@ def verificaLedEtapa(etapa_faixa):
         capture_exception(error)
         print('erro no acender led etapa', error)       
 
-try:
-    # Executa as funções para desligar  sistema raspbian.
-    #GPIO18 BOTÃO PULAR ETAPA
-    GPIO.setup(16, GPIO.IN, pull_up_down=GPIO.PUD_UP) #ou 18 ou 21
-    GPIO.add_event_detect(16, GPIO.FALLING, callback=Login_livre, bouncetime=600)
 
-    #GPIO.setup(18, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-    #GPIO.add_event_detect(18, GPIO.FALLING, callback=Desligar, bouncetime=2000)
-
-    GPIO.setup(19, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-    GPIO.add_event_detect(19, GPIO.FALLING, callback=PulaEtapa, bouncetime=400)
-except RuntimeError as error:
-    print('Erro na função de desligamento e liberar login', error.args[0])
-    capture_exception(error)
-except Exception as error:
-    capture_exception(error)
-    print('Erro na função de desligamento e liberar login', error.args[0])
 
 def iniciaSHT():
     try:
@@ -732,7 +737,7 @@ def main():
         if alerta_vr > 0 and configFaixa.updated < str(datetime.now() - timedelta(minutes=1)):
             if alerta_sonoro_contador > 3:
                 contador = 0
-                while (contador < 4):
+                while (contador < 3):
                     contador += 1
                     speaker_alerta(True, configGeral.speaker)
                     time.sleep(1.4)
@@ -754,7 +759,7 @@ def main():
                     set_display_temp(temperature_DS18B20[1], configGeral.escala_temp)
 
             else:
-                time.sleep(6)
+                time.sleep(4)
             alerta_sonoro_contador += 1
             configGeral = service.getLocalConfigGeral(bd_conf)
             configFaixa = service.getLocalConfigFaixa(bd_conf)
@@ -772,7 +777,7 @@ def main():
 
             if vr > 5 :
                 vr = 0
-            time.sleep(6)
+            time.sleep(4)
         set_led_run(vr % 2)
 
 

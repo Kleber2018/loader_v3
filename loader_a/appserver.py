@@ -5,7 +5,7 @@ from flask import Flask, render_template, request, redirect, session, flash, url
 import sqlite3
 import sys
 
-from flask_cors import CORS
+from flask_cors import CORS, cross_origin
 import socket #https://wiki.python.org.br/SocketBasico
 from datetime import datetime, timedelta
 import json
@@ -52,7 +52,8 @@ except Exception as e:
 # url_for: vai para aonde o redirect indica
 
 app = Flask(__name__)
-CORS(app)
+cors = CORS(app)
+app.config['CORS_HEADERS'] = 'Content-Type'
 
 bd_m = '/etc/loader/load/loader_banco.db'
 bd_conf = '/etc/loader/load/conf_banco.db'
@@ -196,6 +197,7 @@ def rollback_atualizar():
 
 # PARA Alterar hora do sistema
 @app.route('/scan', methods=['GET', 'POST'])
+@cross_origin()
 def scan():
     from datetime import datetime
     try:
@@ -961,6 +963,7 @@ def apisalvarconfig():
 @app.route('/apisalvaretapa', methods=['POST', ])
 def apisalvaretapa():
     try:
+        capture_message('apisalvaretapa')
         if 'token' in request.json:
 
             return_token = auth.verify_autentication_api(request.json['token'])
@@ -980,7 +983,7 @@ def apisalvaretapa():
             else:
                 intervalo = request.json['config']['intervalo_seconds']
         except Exception as e:
-            capture_exception(e)
+            print(e)
 
         temp_min = request.json['config']['temp_min']
         temp_max = request.json['config']['temp_max']

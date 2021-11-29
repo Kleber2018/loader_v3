@@ -103,16 +103,17 @@ def verificarAlerta(temperatura, umidade, config, bd_umid, configGeral):
         elif temperatura < config.temp_min:
             r = 12
     try:
+
         con = sqlite3.connect(bd_umid)
         cursor = con.cursor()
         cursor.execute("SELECT umidade FROM umidade WHERE temperatura = ?", (int(temperatura),))
         rows = cursor.fetchall()
         con.close()
         if len(rows) > 0:
-            if umidade < rows[0][0]-(configGeral.umid_ajuste+1):
+            if umidade < rows[0][0] - 2 + configGeral.umid_ajuste:
                 #umidade baixa
                 r = r + 36
-            elif umidade > rows[0][0]+(configGeral.umid_ajuste+1):
+            elif umidade > rows[0][0] + 2 + configGeral.umid_ajuste:
                 # umidade alta
                 r = r + 33
         else:
