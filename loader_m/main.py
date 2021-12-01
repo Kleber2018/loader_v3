@@ -232,23 +232,6 @@ class ConfigGeral:
         self.etapa = etapa
 
 
-try:
-    # Executa as funções para desligar  sistema raspbian.
-    #GPIO18 BOTÃO PULAR ETAPA
-    GPIO.setup(16, GPIO.IN, pull_up_down=GPIO.PUD_UP) #ou 18 ou 21
-    GPIO.add_event_detect(16, GPIO.FALLING, callback=Login_livre, bouncetime=1500)
-
-    #GPIO.setup(18, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-    #GPIO.add_event_detect(18, GPIO.FALLING, callback=Desligar, bouncetime=2000)
-
-    GPIO.setup(19, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-    GPIO.add_event_detect(19, GPIO.FALLING, callback=PulaEtapa, bouncetime=1500)
-except RuntimeError as error:
-    print('Erro na função de desligamento e liberar login', error.args[0])
-    capture_exception(error)
-except Exception as error:
-    capture_exception(error)
-    print('Erro na função de desligamento e liberar login', error.args[0])
 
 # Função habilita os comandos quando os botões forem pressionados.
 global desligar
@@ -277,7 +260,7 @@ def Login_livre(channel):
     print('gpio 16')
     try:
         display_temp.show('logi')
-        display_humid.show('T 10')
+        display_humid.show('2min')
 
         GPIO.output(26, True)  # Acende o LED
         arquivo = open('/etc/loader/load/login_livre.conf', 'w')
@@ -401,7 +384,8 @@ def PulaEtapa(channel):
         print(f"Erro Ao acender LED: {e}")
 
 
-service.add_system_monitor(bd_monitor)
+#service.add_system_monitor(bd_monitor)
+
 
 def verificaLedEtapa(etapa_faixa):
 
@@ -440,6 +424,23 @@ def verificaLedEtapa(etapa_faixa):
         capture_exception(error)
         print('erro no acender led etapa', error)       
 
+try:
+    # Executa as funções para desligar  sistema raspbian.
+    #GPIO18 BOTÃO PULAR ETAPA
+    GPIO.setup(16, GPIO.IN, pull_up_down=GPIO.PUD_UP) #ou 18 ou 21
+    GPIO.add_event_detect(16, GPIO.FALLING, callback=Login_livre, bouncetime=1500)
+
+    #GPIO.setup(18, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+    #GPIO.add_event_detect(18, GPIO.FALLING, callback=Desligar, bouncetime=2000)
+
+    GPIO.setup(19, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+    GPIO.add_event_detect(19, GPIO.FALLING, callback=PulaEtapa, bouncetime=1500)
+except RuntimeError as error:
+    print('Erro na função de desligamento e liberar login', error.args[0])
+    capture_exception(error)
+except Exception as error:
+    capture_exception(error)
+    print('Erro na função de desligamento e liberar login', error.args[0])
 
 
 def iniciaSHT():
