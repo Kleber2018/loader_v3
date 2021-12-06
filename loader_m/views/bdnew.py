@@ -4,10 +4,10 @@ def criandoSQLiteMedicao(b):
           con = sqlite3.connect(b)
           print('criando o BD')
           cursor = con.cursor()
-          cursor.execute('''CREATE TABLE medicoes (id_medicao integer PRIMARY KEY AUTOINCREMENT NOT NULL, temperatura real, temperatura2 real, umidade real, oculto integer, alerta integer, status integer, created DATE DEFAULT (datetime('now','localtime')) NOT NULL)''')
+          cursor.execute('''CREATE TABLE medicoes (id_medicao integer PRIMARY KEY AUTOINCREMENT NOT NULL, motor_status integer, flap_status integer, temperatura real, temperatura2 real, umidade real, oculto integer, alerta integer, status integer, created DATE DEFAULT (datetime('now','localtime')) NOT NULL)''')
           cursor.execute(
-               '''CREATE TABLE medicao (id_medicao integer PRIMARY KEY AUTOINCREMENT NOT NULL, temperatura real, temperatura2 real, umidade real, alerta integer, updated DATE DEFAULT (datetime('now','localtime')) NOT NULL)''')
-          cursor.execute("INSERT INTO medicao (temperatura, temperatura2, umidade, alerta) VALUES (0, 0, 0, 0)")
+               '''CREATE TABLE medicao (id_medicao integer PRIMARY KEY AUTOINCREMENT NOT NULL, motor_status integer, flap_status integer, temperatura real, temperatura2 real, umidade real, alerta integer, updated DATE DEFAULT (datetime('now','localtime')) NOT NULL)''')
+          cursor.execute("INSERT INTO medicao (temperatura, temperatura2, umidade, alerta, motor_status, flap_status) VALUES (0, 0, 0, 0, 0, 0)")
           con.commit()
           con.close()
      except Exception as e:

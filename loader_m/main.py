@@ -39,6 +39,9 @@ try:
     GPIO.setup(13, GPIO.OUT)
     GPIO.setup(26, GPIO.OUT) #led run
     GPIO.setup(12, GPIO.OUT) # speaker
+    GPIO.setup(28, GPIO.OUT) # Motor fornalha
+
+    GPIO.output(28, False)  # Motor fornalha
 
     GPIO.output(21, True)  # Acende o LED 1
     GPIO.output(5, True)  # Acende o LED 2
@@ -134,6 +137,16 @@ def speaker_alerta(stat, vr):#se retornar 1 é pq está habilitado o alerta
             GPIO.output(12, False)
     except Exception as error:
         capture_exception(error)
+
+def motor_fornalha(stat, vr):#se retornar 1 é pq está habilitado o motor
+    try:
+        if vr == 1:
+            GPIO.output(28, stat) #True or False
+        else:
+            GPIO.output(28, False)
+    except Exception as error:
+        capture_exception(error)
+
 
 global login_livre_status
 login_livre_status = 11
@@ -260,7 +273,7 @@ def Login_livre(channel):
     print('gpio 16')
     try:
         display_temp.show('logi')
-        display_humid.show('2min')
+        display_humid.show('2 nn')
 
         GPIO.output(26, True)  # Acende o LED
         arquivo = open('/etc/loader/load/login_livre.conf', 'w')
@@ -546,6 +559,10 @@ def main():
     global alerta_sonoro_contador
     alerta_sonoro_contador = 0
     global temperature_DS18B20
+    global motor_fornalha_cont
+    motor_fornalha_cont = 0
+    global motor_fornalha_status
+    motor_fornalha_status = False
 
     try:
         temperature_DS18B20 = read_temp(device_file)
@@ -662,6 +679,8 @@ def main():
                                     med.umidade,
                                     oculto,
                                     alerta_vr,
+                                    0,
+                                    motor_fornalha_status,
                                     bd)
 
                         #regra para utilizar na consulta de muitas medicoes
@@ -699,10 +718,12 @@ def main():
         service.updt_medicao(temperatura_fahrenheit, temperaturaSHT_fahrenheit,
                     humidade,
                     alerta_vr,
+                    0,
+                    motor_fornalha_status,
                     bd)
 
         try:
-            sio.emit('medicao', {'temperatura': temperatura_fahrenheit, 'temperatura2': temperaturaSHT_fahrenheit, 'umidade': humidade, 'alerta': alerta_vr, 'updated': time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())})
+            sio.emit('medicao', {'motor_status': motor_fornalha_status, 'temperatura': temperatura_fahrenheit, 'temperatura2': temperaturaSHT_fahrenheit, 'umidade': humidade, 'alerta': alerta_vr, 'updated': time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())})
         except Exception as error:
             capture_exception(error)
             print('erro socket:', e)
@@ -733,6 +754,20 @@ def main():
 
         #if configFaixa.expiration < str(datetime.now()) :
         #    print('implementar lógica para pular etapa pq expirou')
+
+        if not vr % 3: #para verificar o motor a cada 12s
+            if alerta_vr == 12 or alerta_vr == 45 or alerta_vr == 48: #temperatura baixa
+                motor_fornalha_cont += 1
+                if motor_fornalha_cont > 5:
+                    if not motor_fornalha_status:
+                        motor_fornalha_status = True
+                        print('ligar motor ventoinha')
+                        motor_fornalha(motor_fornalha_status, 1)
+            else:
+                motor_fornalha_cont = 0
+                motor_fornalha_status = False
+                print('desligar motor ventoinha')
+                motor_fornalha(motor_fornalha_status, 1)
         
         #em produção trocar para 10min
         if alerta_vr > 0 and configFaixa.updated < str(datetime.now() - timedelta(minutes=1)):
@@ -823,6 +858,7 @@ if __name__ == '__main__':
         capture_exception(error)
         print('erro67', error)
         GPIO.output(26, False)
+        GPIO.output(28, False)
         GPIO.cleanup() #testar melhor
         time.sleep(2)
         main()

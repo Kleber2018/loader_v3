@@ -67,7 +67,35 @@ def getLocalConfigGeral(bd):
         time.sleep(2)
         return False
 
-def add_medicao(temperatura, temperatura_sht, umidade, numoculto, alerta, bd):
+#habilitar depois de trocar a central da estufa de triunfo
+def add_medicao2(temperatura, temperatura_sht, umidade, numoculto, alerta, flap_status, motor_status, bd):
+    try:
+        motor = 0
+        if motor_status:
+            motor = 1        
+    except Exception as error:
+        motor = 0
+
+    """Adds the given contact to the contacts table"""
+    try:
+        con = sqlite3.connect(bd)
+        print('adicionando medição')
+        cursor = con.cursor()
+        cursor.execute("INSERT INTO medicoes (temperatura, temperatura2, umidade, oculto, alerta, status, flap_status, motor_status) VALUES (?, ?, ?, ?, ?, 0, ?, ?);", (temperatura, temperatura_sht, umidade, numoculto, alerta, flap_status, motor))
+        con.commit()
+        con.close()
+    except Exception as error:
+        print(f"erro ao adicionar medicao em medições: {error}")
+        bdnew.criandoSQLiteMedicao(bd)
+
+def add_medicao(temperatura, temperatura_sht, umidade, numoculto, alerta, flap_status, motor_status, bd):
+    try:
+        motor = 0
+        if motor_status:
+            motor = 1        
+    except Exception as error:
+        motor = 0
+
     """Adds the given contact to the contacts table"""
     try:
         con = sqlite3.connect(bd)
@@ -80,7 +108,33 @@ def add_medicao(temperatura, temperatura_sht, umidade, numoculto, alerta, bd):
         print(f"erro ao adicionar medicao em medições: {error}")
         bdnew.criandoSQLiteMedicao(bd)
 
-def updt_medicao(temperatura, temperatura_sht, umidade, alerta, bd):
+#habilitar depois de trocar a central da estufa de triunfo
+def updt_medicao2(temperatura, temperatura_sht, umidade, alerta, flap_status, motor_status, bd):
+    try:
+        motor = 0
+        if motor_status:
+            motor = 1        
+    except Exception as error:
+        motor = 0
+    """Adds the given contact to the contacts table"""
+    try:
+        con = sqlite3.connect(bd)
+        cursor = con.cursor()
+        cursor.execute("UPDATE medicao SET temperatura = ?, temperatura2 = ?, umidade = ?, alerta = ?, flap_status = ?, motor_status = ?, updated = datetime('now', 'localtime') WHERE id_medicao = 1;",
+                       (temperatura, temperatura_sht, umidade, alerta, flap_status, motor))
+        con.commit()
+        con.close()
+    except Exception as error:
+        print(f"erro ao atualizar medicao: {error}")
+        bdnew.criandoSQLiteMedicao(bd)
+
+def updt_medicao(temperatura, temperatura_sht, umidade, alerta, flap_status, motor_status, bd):
+    try:
+        motor = 0
+        if motor_status:
+            motor = 1        
+    except Exception as error:
+        motor = 0
     """Adds the given contact to the contacts table"""
     try:
         con = sqlite3.connect(bd)
@@ -117,7 +171,7 @@ def verificarAlerta(temperatura, umidade, config, bd_umid, configGeral):
                 # umidade alta
                 r = r + 33
         else:
-            print('nenhum registro')
+            print('nenhum alerta umidade')
     except Exception as error:
         print('ERRO NA TABELA DE UMIDADE busca',error)
     return r
