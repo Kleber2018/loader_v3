@@ -39,9 +39,8 @@ try:
     GPIO.setup(13, GPIO.OUT)
     GPIO.setup(26, GPIO.OUT) #led run
     GPIO.setup(12, GPIO.OUT) # speaker
-    GPIO.setup(28, GPIO.OUT) # Motor fornalha
-
-    GPIO.output(28, False)  # Motor fornalha
+    GPIO.setup(20, GPIO.OUT) # Motor fornalha
+    #GPIO.setup(22, GPIO.OUT) # flap
 
     GPIO.output(21, True)  # Acende o LED 1
     GPIO.output(5, True)  # Acende o LED 2
@@ -129,9 +128,10 @@ while True:
         capture_exception(error)
         time.sleep(5.0*vr_erro)
 
-def speaker_alerta(stat, vr):#se retornar 1 é pq está habilitado o alerta
+
+def speaker_alerta(stat, vr, ct_mudo):#se retornar 1 é pq está habilitado o alerta
     try:
-        if vr == 1:
+        if vr == 1 and ct_mudo < 2:
             GPIO.output(12, stat) #True or False
         else:
             GPIO.output(12, False)
@@ -141,9 +141,9 @@ def speaker_alerta(stat, vr):#se retornar 1 é pq está habilitado o alerta
 def motor_fornalha(stat, vr):#se retornar 1 é pq está habilitado o motor
     try:
         if vr == 1:
-            GPIO.output(28, stat) #True or False
+            GPIO.output(20, stat) #True or False
         else:
-            GPIO.output(28, False)
+            GPIO.output(20, False)
     except Exception as error:
         capture_exception(error)
 
@@ -332,10 +332,27 @@ def Login_livre(channel):
         print(f"Erro Ao criar arquivo: {error}")
         capture_exception(error)
 
+global contador_click
+contador_click = 0
 
-def PulaEtapa(channel):
-    capture_message('pula Etapa', etapa_faixa)
-   
+global contador_mudo_speak
+contador_mudo_speak = 0
+
+def PushButtonEtapa(channel):
+    global contador_click
+    global contador_mudo_speak
+    contador_mudo_speak = 500
+    contador_click += 1
+    if contador_click > 1:
+        PulaEtapa()
+        contador_click = 0
+    else:
+        speaker_alerta(False, 0, contador_mudo_speak)
+        print('silencia alarme')
+
+
+
+def PulaEtapa():  
     try:
         con = sqlite3.connect(bd_conf)
         print('atualizando etapa')
@@ -441,13 +458,13 @@ try:
     # Executa as funções para desligar  sistema raspbian.
     #GPIO18 BOTÃO PULAR ETAPA
     GPIO.setup(16, GPIO.IN, pull_up_down=GPIO.PUD_UP) #ou 18 ou 21
-    GPIO.add_event_detect(16, GPIO.FALLING, callback=Login_livre, bouncetime=1500)
+    GPIO.add_event_detect(16, GPIO.FALLING, callback=Login_livre, bouncetime=1000)
 
     #GPIO.setup(18, GPIO.IN, pull_up_down=GPIO.PUD_UP)
     #GPIO.add_event_detect(18, GPIO.FALLING, callback=Desligar, bouncetime=2000)
 
     GPIO.setup(19, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-    GPIO.add_event_detect(19, GPIO.FALLING, callback=PulaEtapa, bouncetime=1500)
+    GPIO.add_event_detect(19, GPIO.FALLING, callback=PushButtonEtapa, bouncetime=1000)
 except RuntimeError as error:
     print('Erro na função de desligamento e liberar login', error.args[0])
     capture_exception(error)
@@ -512,6 +529,8 @@ def main():
     global configGeral
     global contadorTemp
     global contadorMonitor
+    global contador_mudo_speak
+    global contador_click
     contadorMonitor = 0
     try:
         configGeral = service.getLocalConfigGeral(bd_conf)
@@ -521,13 +540,13 @@ def main():
         contadorTemp = configGeral.intervalo_seconds/2
 
         print(str(SHTstatus))
-        speaker_alerta(True, configGeral.speaker)
+        speaker_alerta(True, configGeral.speaker, contador_mudo_speak)
         time.sleep(0.2)
-        speaker_alerta(False, configGeral.speaker)
+        speaker_alerta(False, configGeral.speaker, contador_mudo_speak)
         time.sleep(0.7)
-        speaker_alerta(True, configGeral.speaker)
+        speaker_alerta(True, configGeral.speaker, contador_mudo_speak)
         time.sleep(0.3)
-        speaker_alerta(False, configGeral.speaker)
+        speaker_alerta(False, configGeral.speaker, contador_mudo_speak)
         time.sleep(1.0)
     except Exception as error :
         capture_exception(error)
@@ -770,25 +789,27 @@ def main():
                 motor_fornalha(motor_fornalha_status, 1)
         
         #em produção trocar para 10min
+        if contador_mudo_speak > 0:
+            contador_mudo_speak -= 1
         if alerta_vr > 0 and configFaixa.updated < str(datetime.now() - timedelta(minutes=1)):
             if alerta_sonoro_contador > 3:
                 contador = 0
                 while (contador < 3):
                     contador += 1
-                    speaker_alerta(True, configGeral.speaker)
+                    speaker_alerta(True, configGeral.speaker, contador_mudo_speak)
                     time.sleep(1.4)
                     if alerta_vr == 11 or alerta_vr == 44 or alerta_vr == 47: #temp alta
                         set_display_temp(str('----'), 'T')
-                        speaker_alerta(False, configGeral.speaker)
+                        speaker_alerta(False, configGeral.speaker, contador_mudo_speak)
                     elif alerta_vr == 12 or alerta_vr == 45 or alerta_vr == 48: #temp baixa
                         set_display_temp(str('-   '), 'T')
-                        speaker_alerta(False, configGeral.speaker)
+                        speaker_alerta(False, configGeral.speaker, contador_mudo_speak)
                     if alerta_vr == 33 or alerta_vr == 44 or alerta_vr == 45: #umid alta
                         set_display_umid(str('----'))
-                        speaker_alerta(False, configGeral.speaker)
+                        speaker_alerta(False, configGeral.speaker, contador_mudo_speak)
                     elif alerta_vr == 36 or alerta_vr == 47 or alerta_vr == 48:  # umid baixa
                         set_display_umid(str('-   '))
-                        speaker_alerta(False, configGeral.speaker)
+                        speaker_alerta(False, configGeral.speaker, contador_mudo_speak)
                     time.sleep(0.6)
                     if sensor:
                         set_display_umid(int(sensor.relative_humidity))
@@ -814,6 +835,8 @@ def main():
             if vr > 5 :
                 vr = 0
             time.sleep(4)
+
+        contador_click = 0
         set_led_run(vr % 2)
 
 
