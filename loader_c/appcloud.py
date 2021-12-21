@@ -76,7 +76,9 @@ from views import firmware
 global us
 global user
 
+
 try:
+
     tempFile = open( '/etc/loader/load/cloud.conf')
     jwt_user = tempFile.read()
     tempFile.close()
@@ -84,15 +86,25 @@ try:
     version_local = tempVFile.readlines()
     tempVFile.close()
     us = auth.verify_and_decode_jwt(jwt_user)
-    from datetime import datetime
-    hora = f'{datetime.now()}'
-    dt = {'hora': hora, 'log': 'inicializando', 'version': version_local[0]}
     user = auth_fire.sign_in_with_email_and_password(us['user'], us['key'])
-    db.child(ns).child("log").push(dt, user['idToken']) #edita o mesmo arquivo
 except Exception as e:
     capture_exception(e)
     print('erro de autenticação', e)
 
+
+def armazenaLog(tipo):
+    try:
+        global user
+        global ns
+        from datetime import datetime
+        hora = f'{datetime.now()}'
+        dt = {'hora': hora, 'log': tipo, 'version': version_local[0]}
+        db.child(ns).child("log").push(dt, user['idToken']) #edita o mesmo arquivo
+    except Exception as e:
+        capture_exception(e)
+        print('erro de autenticação', e)
+
+armazenaLog('inicialização')
 
 def verify_firmware():
     firmw = db.child(ns).child("firmware").get(user['idToken']) #edita o mesmo arquivo
@@ -131,7 +143,7 @@ def verify_firmware():
         capture_message('atualizar_firmware 140')
         capture_exception(e)
         print(e)
-
+    armazenaLog('verify_firmware')
 
 def main():
     sio = socketio.Client()
