@@ -554,6 +554,44 @@ def configRetornoEtapa():
         print(f"Erro SQLite: {e}")
         return {'erro': f"{e}"}
 
+
+@app.route('/apietapasconfig', methods=['GET'])
+def apietapasconfig():
+    try:
+        configEtapas = getconfigetapas()
+        return jsonify(configEtapas)
+    except Exception as e:
+        capture_exception(e)
+        return jsonify({'erro': f"{e}"})
+
+
+def getconfigetapas():
+    try:
+        conn = sqlite3.connect(bd_conf)
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT  temp_min, temp_max, umid_ajuste, etapa, updated, expiration, intervalo_seconds, id_etapa, obs, status FROM etapa;")
+        configs = []
+        for temp_min, temp_max, umid_ajuste, etapa, updated, expiration, intervalo_seconds, id_etapa, obs, status  in cur:
+            configs.append(
+                {'id_etapa' : id_etapa,
+                'etapa': etapa,
+                'intervalo_seconds': int(intervalo_seconds),
+                'temp_min': float(temp_min),
+                'temp_max': float(temp_max),
+                'umid_ajuste': umid_ajuste,
+                'expiration': expiration,
+                'updated': f"{updated}",
+                'obs': obs,
+                'status': status})
+        cur.close()
+        conn.close()
+        return configs
+    except Exception as e:
+        capture_exception(e)
+        print(f"Erro SQLite: {e}")
+        return {'erro': f"{e}"}
+
 def getLocalConfigEtapa():
     try:
         # global configFaixa
@@ -965,17 +1003,13 @@ def apisalvaretapa():
     try:
         capture_message('apisalvaretapa')
         if 'token' in request.json:
-
             return_token = auth.verify_autentication_api(request.json['token'])
-
             if 'autenticado' in return_token:
                 print('autenticado')
             else:
                 return jsonify({'erro': 'Necessario estar logado!'})
         else:
             return jsonify({'erro': 'Necessario estar logado!'})
-
-
         try:  # corrigir depois de implementar campos no app
             intervalo = 60
             if request.json['config']['intervalo_seconds'] < 60:
@@ -984,17 +1018,14 @@ def apisalvaretapa():
                 intervalo = request.json['config']['intervalo_seconds']
         except Exception as e:
             print(e)
-
         temp_min = request.json['config']['temp_min']
         temp_max = request.json['config']['temp_max']
         umid_ajuste = request.json['config']['umid_ajuste']
-
         escala_temp = 'F'
         try:
             escala_temp = request.json['config']['escala_temp']
         except Exception as e:
-            capture_exception(e)
-        
+            escala_temp = 'F'
         try:
             id = request.json['config']['id']
             etapa = request.json['config']['etapa']
@@ -1002,13 +1033,11 @@ def apisalvaretapa():
             capture_exception(e)
             id = 5
             etapa = 'Personalizada'
-
         try: #corrigir depois de implementar campos no app
             alerta_desat = 0
             speaker = 0
             speaker = request.json['config']['speaker']
             alerta_desat = request.json['config']['alerta_desat']
-
         except Exception as e:
             capture_exception(e)
         obs = request.json['config']['obs']

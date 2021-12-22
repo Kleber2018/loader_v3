@@ -21,9 +21,9 @@ def criandoSQLiteConf(b):
           cursor.execute('''CREATE TABLE usuario (login text, senha text, nome text, telefone text, email text, privilegios text)''')
           cursor.execute("INSERT INTO usuario VALUES ('montabaco', '4444', 'Montabaco','333333', 't@t.com', 'adm')")
 
-          cursor.execute('''CREATE TABLE config (id_config integer PRIMARY KEY AUTOINCREMENT NOT NULL, nome text, etapa text, intervalo_seconds integer , temp_min real , temp_max real, umid_ajuste integer, escala_temp text, obs text, alerta_desat text, speaker integer, status integer, updated DATE DEFAULT (datetime('now','localtime')) NOT NULL, expiration DATE DEFAULT (datetime('now','localtime')) NOT NULL)''')
-          cursor.execute("INSERT INTO config (nome, etapa, intervalo_seconds, temp_min, temp_max, umid_ajuste, escala_temp, alerta_desat, speaker, status, obs) "
-                         "VALUES ('Estufa 1', 'Padrão', 200, 90.0, 100.0, 1, 'F', 0, 0, 0, 'Configuração padrão')")
+          cursor.execute('''CREATE TABLE config (id_config integer PRIMARY KEY AUTOINCREMENT NOT NULL, flap_auto integer, flap_posicao integer, flap_seconds integer, nome text, etapa text, intervalo_seconds integer , temp_min real , temp_max real, umid_ajuste integer, escala_temp text, obs text, alerta_desat text, speaker integer, status integer, updated DATE DEFAULT (datetime('now','localtime')) NOT NULL, expiration DATE DEFAULT (datetime('now','localtime')) NOT NULL)''')
+          cursor.execute("INSERT INTO config (flap_auto, flap_posicao, flap_seconds, nome, etapa, intervalo_seconds, temp_min, temp_max, umid_ajuste, escala_temp, alerta_desat, speaker, status, obs) "
+                         "VALUES (1, 6, 2, 'Estufa 1', 'Padrão', 500, 90.0, 100.0, 1, 'F', 0, 0, 0, 'Configuração padrão')")
 
           cursor.execute(
               '''CREATE TABLE etapa (id_etapa integer PRIMARY KEY AUTOINCREMENT NOT NULL, etapa text, intervalo_seconds integer , temp_min real , temp_max real, umid_min real , umid_max real, umid_ajuste integer, escala_temp text, obs text, alerta_desat text, speaker integer, status integer, updated DATE DEFAULT (datetime('now','localtime')) NOT NULL, expiration DATE DEFAULT (datetime('now','localtime')) NOT NULL)''')
