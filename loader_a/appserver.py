@@ -1037,11 +1037,11 @@ def apisalvaretapa():
         except Exception as e:
             umid_ajuste = 0
         try:
-            id = request.json['config']['id']
+            id_etapa = request.json['config']['id_etapa']
             etapa = request.json['config']['etapa']
         except Exception as e:
             capture_exception(e)
-            id = 5
+            id_etapa = 5
             etapa = 'Personalizada'
         obs = request.json['config']['obs']
 
@@ -1050,7 +1050,7 @@ def apisalvaretapa():
         print(f"Erro SQLite 585: {e}")
         return jsonify({'retorno': f"{e}"})
     try:
-        print('alterando id', id)
+        print('alterando id', id_etapa)
         conn = sqlite3.connect(bd_conf)
         cur = conn.cursor()
         cur.execute("UPDATE etapa SET status = 0, updated = ? WHERE status = 1;", (str(datetime.now()),))
@@ -1067,7 +1067,7 @@ def apisalvaretapa():
                 umid_ajuste,
                 str(datetime.now()),
                 obs,
-                id
+                id_etapa
             ))
         conn.commit()
         cur.close()
