@@ -41,6 +41,10 @@ try:
     GPIO.setup(12, GPIO.OUT) # speaker
     GPIO.setup(20, GPIO.OUT) # Motor fornalha
     #GPIO.setup(22, GPIO.OUT) # flap
+    GPIO.setup(7, GPIO.OUT) # flap comando 1
+    GPIO.setup(18, GPIO.OUT) # flap comando 1
+    GPIO.output(7, False)  # Acende o LED 1
+    GPIO.output(18, False)  # Acende o LED 2
 
     GPIO.output(21, True)  # Acende o LED 1
     GPIO.output(5, True)  # Acende o LED 2
@@ -97,7 +101,8 @@ from datetime import datetime, timedelta
 bd = '/etc/loader/load/loader_banco.db'
 bd_conf = '/etc/loader/load/conf_banco.db'
 bd_umid = '/etc/loader/load/umid_banco.db' #tabela de umidade para referencia 
-bd_monitor = '/etc/loader/load/monitor_banco4.db' #para armazenar dados do sistema - temp cpu
+
+
 
 
 #inicializando SOCKET
@@ -127,6 +132,10 @@ while True:
         print('erro no servidor', error)
         capture_exception(error)
         time.sleep(5.0*vr_erro)
+
+
+from simple_pid import PID
+
 
 
 def speaker_alerta(stat, vr, ct_mudo):#se retornar 1 é pq está habilitado o alerta
@@ -198,6 +207,29 @@ def set_led_run(vr):
         capture_exception(error)
         print('erro no led status')
 
+global flap_status #0 quer dizer no meio -10 aberto e +10 fechad0
+flap_status = 6
+
+def set_flap_comando(comando, tempo):
+    try:
+        global flap_status
+        print(flap_status)
+        if comando == 'abrir':
+            GPIO.output(7, True)
+            print('abrindo')
+            flap_status = flap_status - tempo
+            time.sleep(tempo)
+            GPIO.output(7, False)
+        elif comando == 'fechar':
+            GPIO.output(18, True)
+            print('fechando')
+            flap_status = flap_status + tempo
+            time.sleep(tempo)
+            GPIO.output(18, False)
+    except Exception as error:
+        capture_exception(error)
+        print('erro no led status')
+
 def iniciaSensorTemp():
     try:
         # Numero dos pinos da Raspberry Pi configurada no modo Broadcom.
@@ -227,13 +259,15 @@ class Medicao:
         self.temperatura2 = temp2
 
 class ConfigFaixa:
-    def __init__(self, temp_min, temp_max, umid_ajuste, etapa, updated, expiration):
+    def __init__(self, temp_min, temp_max, umid_ajuste, etapa, updated, expiration, umid_min, umid_max):
         self.temp_min = temp_min
         self.temp_max = temp_max
         self.umid_ajuste = umid_ajuste
         self.etapa = etapa
         self.updated = updated
         self.expiration = expiration
+        self.umid_min = umid_min
+        self.umid_max = umid_max
         
 class ConfigGeral:
     def __init__(self, intervalo_seconds, umid_ajuste, escala_temp, alerta_desat, speaker, etapa):
@@ -414,7 +448,6 @@ def PulaEtapa():
         print(f"Erro Ao acender LED: {e}")
 
 
-#service.add_system_monitor(bd_monitor)
 
 
 def verificaLedEtapa(etapa_faixa):
@@ -458,13 +491,10 @@ try:
     # Executa as funções para desligar  sistema raspbian.
     #GPIO18 BOTÃO PULAR ETAPA
     GPIO.setup(16, GPIO.IN, pull_up_down=GPIO.PUD_UP) #ou 18 ou 21
-    GPIO.add_event_detect(16, GPIO.FALLING, callback=Login_livre, bouncetime=1000)
-
-    #GPIO.setup(18, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-    #GPIO.add_event_detect(18, GPIO.FALLING, callback=Desligar, bouncetime=2000)
+    GPIO.add_event_detect(16, GPIO.FALLING, callback=Login_livre, bouncetime=700)
 
     GPIO.setup(19, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-    GPIO.add_event_detect(19, GPIO.FALLING, callback=PushButtonEtapa, bouncetime=1000)
+    GPIO.add_event_detect(19, GPIO.FALLING, callback=PushButtonEtapa, bouncetime=700)
 except RuntimeError as error:
     print('Erro na função de desligamento e liberar login', error.args[0])
     capture_exception(error)
@@ -507,6 +537,82 @@ def iniciaSHT():
         set_display_umid('err2')
         return False
 
+def controleFlap2(umid, configF, configG):
+    print('controle flap: ', umid, configF.umid_min, configF.umid_max, configF.temp_min, configF.temp_max, umid - configF.umid_max)
+    global flap_status
+    if umid > 0:
+        if umid > configF.umid_max + 1:
+            #umidade alta
+            if((umid - configF.umid_max) > 10):
+                set_flap_comando('abrir', 10)
+                print('umidade alta', umid - configF.umid_max)
+            elif((umid - configF.umid_max) > 5):
+                set_flap_comando('abrir', 5)
+                print('umidade alta', umid - configF.umid_max)
+            elif((umid - configF.umid_max) > 1):
+                set_flap_comando('abrir', 2)
+                print('umidade alta', umid - configF.umid_max)
+        elif umid < configF.umid_min - 1:
+            if((umid - configF.umid_min) < -10):
+                set_flap_comando('fechar', 10)
+                print('umidade baixa', umid - configF.umid_min)
+            elif((umid - configF.umid_min) < -5):
+                set_flap_comando('fechar', 5)
+                print('umidade baixa', umid - configF.umid_min)
+            elif((umid - configF.umid_min) < -1):
+                set_flap_comando('fechar', 2)
+                print('umidade baixa', umid - configF.umid_min)
+
+
+def aciona_flap(comando, tempo):
+    print('acionando flap', comando, tempo)
+    try:
+        tempo = tempo * 2
+        if comando == 'abrir':
+            GPIO.output(7, True)
+            GPIO.output(18, False)
+            print('abrindo')
+            time.sleep(tempo)
+            GPIO.output(7, False)
+            print('abriu')
+        elif comando == 'fechar':
+            GPIO.output(18, True)
+            GPIO.output(7, False)
+            print('fechando')
+            time.sleep(tempo)
+            GPIO.output(18, False)
+            print('fechou')
+    except Exception as error:
+        capture_exception(error)
+        print('erro no acionamento do flap status')
+
+global pid
+pid = PID(0.1, 0.1, 0.1, setpoint=50) 
+pid.output_limits = (0, 6) 
+
+def controleFlap(umid, setpoint):
+    #Umidade baixa (6) (fechado)
+    #umidade alta (0) (aberto)
+    global pid
+    pid.setpoint = setpoint #valor que deseja alcançar configGeral.temp
+    controle = pid(umid)
+    global flap_status
+    correcao = flap_status-int(controle)
+    flap_status = int(controle)
+    print('controle pid:', controle, 'flap status:', flap_status, 'correção', correcao)
+    if correcao > 0:
+        #a correção precisa ser positiva
+        if flap_status == 6:
+            aciona_flap('fechar', correcao+2)
+        else:
+            aciona_flap('fechar', correcao)
+    elif correcao < 0:
+        #a correção precisa ser negativa
+        if flap_status == 0:
+            aciona_flap('abrir', -(correcao-2))
+        else:
+            aciona_flap('abrir', -correcao)
+     
 
 def main():
     global DS18B20status
@@ -528,10 +634,8 @@ def main():
     global configFaixa
     global configGeral
     global contadorTemp
-    global contadorMonitor
     global contador_mudo_speak
     global contador_click
-    contadorMonitor = 0
     try:
         configGeral = service.getLocalConfigGeral(bd_conf)
         configFaixa = service.getLocalConfigFaixa(bd_conf)
@@ -565,6 +669,8 @@ def main():
     #variavel utilizada para veirficar como esta setado a configuração
     global vr
     vr = 0
+    global vr_flap
+    vr_flap = 10
     global oculto
     oculto = 0
     global temperatura_celcius
@@ -582,6 +688,9 @@ def main():
     motor_fornalha_cont = 0
     global motor_fornalha_status
     motor_fornalha_status = False
+    # Proporcional, 
+    # integral: tempo para alcançar o valor de set point, 
+    # Derivativa
 
     try:
         temperature_DS18B20 = read_temp(device_file)
@@ -603,6 +712,8 @@ def main():
         temperatura_fahrenheit = 0
         temperatura_celcius = 0
         #raise error
+
+    aciona_flap('fechar', 6) #para flap iniciar fechado
 
     while True:
         hora = datetime.now()
@@ -682,9 +793,22 @@ def main():
             alerta_vr = service.verificarAlerta(temperatura_fahrenheit, humidade, configFaixa, bd_umid, configGeral)#ok = 0, TA =11, TB=12, HA=33, HB=36, TA+HA=44, TA+HB=47, TB+HA=45, TB+HB=48
 
 
+
         #calculando média
         m = Medicao(float(temperatura_fahrenheit), float(humidade), float(temperaturaSHT_fahrenheit))
         medicoes = calc.array_medicoes(medicoes, m )
+
+
+        # pid
+        # FALTA DENSEVOLER, PENDENTE
+        # DESENVOLVER UM SISTEMA PARA ALTERAR O FLAP PARA MANUAL
+        vr_flap += 1
+        if vr_flap > 20:
+            vr_flap = 0
+            if int(humidade) > 0:
+                controleFlap(float(humidade), configFaixa.umid_max )
+
+
 
         #armazenando no BD
         try:
@@ -715,24 +839,14 @@ def main():
                         print('erro23', error)
                         time.sleep(5)
             else:
-                contadorTemp += 6
+                contadorTemp += 4
         except Exception as error:
             capture_exception(error)
             print('erro no vr para armazenar no bd', error)
             time.sleep(1)
         #uma regra para não precisar verificar se a configuração foi alterada toda vez
 
-    #armazenando no Monitor
-        try:
-            contadorMonitor += 1
-            if contadorMonitor > 20 :
-                service.add_system_monitor(bd_monitor)
-                contadorMonitor = 0
-        except Exception as error:
-            capture_exception(error)
-            print('erro no vr para armazenar no bd', error)
-            time.sleep(1)
-
+   
         #Atualizando tabela de tempo real
         service.updt_medicao(temperatura_fahrenheit, temperaturaSHT_fahrenheit,
                     humidade,
@@ -876,6 +990,8 @@ if __name__ == '__main__':
         print('erro66', error.args[0])
         print('atribuindo')
         time.sleep(5)
+        GPIO.output(7, False)  # Acende o LED 1
+        GPIO.output(18, False)  # Acende o LED 2
         GPIO.output(26, False)
     except Exception as error:
         capture_exception(error)

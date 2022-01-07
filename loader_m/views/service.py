@@ -4,14 +4,15 @@ from views import bdnew
 import time
 
 class ConfigFaixa:
-    def __init__(self, temp_min, temp_max, umid_ajuste, etapa, updated, expiration):
+    def __init__(self, temp_min, temp_max, umid_ajuste, etapa, updated, expiration, umid_min, umid_max):
         self.temp_min = temp_min
         self.temp_max = temp_max
         self.umid_ajuste = umid_ajuste
         self.etapa = etapa
         self.updated = updated
         self.expiration = expiration
-        
+        self.umid_min = umid_min
+        self.umid_max = umid_max
 class ConfigGeral:
     def __init__(self, intervalo_seconds, umid_ajuste, escala_temp, alerta_desat, speaker, etapa):
         self.intervalo_seconds = intervalo_seconds
@@ -27,19 +28,19 @@ def getLocalConfigFaixa(bd):
         con = sqlite3.connect(bd)
         cursor = con.cursor()
         cursor.execute(
-            "SELECT  temp_min, temp_max, umid_ajuste, etapa, updated, expiration FROM etapa WHERE status = 1")
+            "SELECT  temp_min, temp_max, umid_ajuste, etapa, updated, expiration, umid_min, umid_max FROM etapa WHERE status = 1")
 
         rows = cursor.fetchall()
         if len(rows) > 0:
             con.close()
-            return ConfigFaixa(float(rows[0][0]), float(rows[0][1]), int(rows[0][2]), rows[0][3], rows[0][4], rows[0][5])
+            return ConfigFaixa(float(rows[0][0]), float(rows[0][1]), int(rows[0][2]), rows[0][3], rows[0][4], rows[0][5], rows[0][6], rows[0][7])
         else:
             cursor.execute(
-                "SELECT  temp_min, temp_max, umid_ajuste, etapa, updated, expiration FROM etapa WHERE id_config = 5;")
+                "SELECT  temp_min, temp_max, umid_ajuste, etapa, updated, expiration, umid_min, umid_max FROM etapa WHERE id_config = 5;")
             rows = cursor.fetchall()   
             cursor.execute("UPDATE config SET status = 1 WHERE id_config = 5;") 
             con.close()
-            return ConfigFaixa(float(rows[0][0]), float(rows[0][1]), int(rows[0][2]), rows[0][3], rows[0][4], rows[0][5])
+            return ConfigFaixa(float(rows[0][0]), float(rows[0][1]), int(rows[0][2]), rows[0][3], rows[0][4], rows[0][5], rows[0][6], rows[0][7])
     except Exception as e:
         print('Erro consultar BD getLocalConfigFaixa', e)
         time.sleep(2)
@@ -109,7 +110,7 @@ def add_medicao(temperatura, temperatura_sht, umidade, numoculto, alerta, flap_s
         bdnew.criandoSQLiteMedicao(bd)
 
 #habilitar depois de trocar a central da estufa de triunfo
-def updt_medicao2(temperatura, temperatura_sht, umidade, alerta, flap_status, motor_status, bd):
+def updt_medicao(temperatura, temperatura_sht, umidade, alerta, flap_status, motor_status, bd):
     try:
         motor = 0
         if motor_status:
@@ -128,7 +129,7 @@ def updt_medicao2(temperatura, temperatura_sht, umidade, alerta, flap_status, mo
         print(f"erro ao atualizar medicao: {error}")
         bdnew.criandoSQLiteMedicao(bd)
 
-def updt_medicao(temperatura, temperatura_sht, umidade, alerta, flap_status, motor_status, bd):
+def updt_medicao2(temperatura, temperatura_sht, umidade, alerta, flap_status, motor_status, bd):
     try:
         motor = 0
         if motor_status:
@@ -147,8 +148,24 @@ def updt_medicao(temperatura, temperatura_sht, umidade, alerta, flap_status, mot
         print(f"erro ao atualizar medicao: {error}")
         bdnew.criandoSQLiteMedicao(bd)
 
-#para verificar se a temperatura e umidade que está dentro do setpointer de alerta:#ok = 0, temp = 1, umid=3, ambos = 4
 def verificarAlerta(temperatura, umidade, config, bd_umid, configGeral):
+    global r
+    r = 0
+    if temperatura > 0:
+        if temperatura > config.temp_max + 5:
+            r = 11
+        elif temperatura < config.temp_min - 5:
+            r = 12
+    if umidade > 0:
+        if umidade > config.umid_max + 5:
+            r = r + 36
+        elif umidade < config.umid_min - 5:
+            r = r + 33
+    return r
+
+
+#para verificar se a temperatura e umidade que está dentro do setpointer de alerta:#ok = 0, temp = 1, umid=3, ambos = 4
+def verificarAlerta2(temperatura, umidade, config, bd_umid, configGeral):
     global r
     r = 0
     if temperatura > 0:
@@ -157,7 +174,6 @@ def verificarAlerta(temperatura, umidade, config, bd_umid, configGeral):
         elif temperatura < config.temp_min:
             r = 12
     try:
-
         con = sqlite3.connect(bd_umid)
         cursor = con.cursor()
         cursor.execute("SELECT umidade FROM umidade WHERE temperatura = ?", (int(temperatura),))

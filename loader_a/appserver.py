@@ -525,16 +525,18 @@ def configRetornoEtapa():
         conn = sqlite3.connect(bd_conf)
         cur = conn.cursor()
         cur.execute(
-            "SELECT  temp_min, temp_max, umid_ajuste, etapa, updated, expiration, intervalo_seconds, id_etapa, obs FROM etapa WHERE status = 1")
+            "SELECT  temp_min, temp_max, umid_min, umid_max, umid_ajuste, etapa, updated, expiration, intervalo_seconds, id_etapa, obs FROM etapa WHERE status = 1")
 
         configs = []
-        for temp_min, temp_max, umid_ajuste, etapa, updated, expiration, intervalo_seconds, id_etapa, obs  in cur:
+        for temp_min, temp_max, umid_min, umid_max, umid_ajuste, etapa, updated, expiration, intervalo_seconds, id_etapa, obs  in cur:
             configs.append(
                 {'id_etapa' : id_etapa,
                 'etapa': etapa,
                 'intervalo_seconds': int(intervalo_seconds),
                 'temp_min': float(temp_min),
                 'temp_max': float(temp_max),
+                'umid_min': float(umid_min),
+                'umid_max': float(umid_max),
                 'umid_ajuste': umid_ajuste,
                 'expiration': expiration,
                 'updated': f"{updated}",
@@ -570,15 +572,17 @@ def getconfigetapas():
         conn = sqlite3.connect(bd_conf)
         cur = conn.cursor()
         cur.execute(
-            "SELECT  temp_min, temp_max, umid_ajuste, etapa, updated, expiration, intervalo_seconds, id_etapa, obs, status FROM etapa;")
+            "SELECT  temp_min, temp_max, umid_min, umid_max, umid_ajuste, etapa, updated, expiration, intervalo_seconds, id_etapa, obs, status FROM etapa;")
         configs = []
-        for temp_min, temp_max, umid_ajuste, etapa, updated, expiration, intervalo_seconds, id_etapa, obs, status  in cur:
+        for temp_min, temp_max, umid_min, umid_max, umid_ajuste, etapa, updated, expiration, intervalo_seconds, id_etapa, obs, status  in cur:
             configs.append(
                 {'id_etapa' : id_etapa,
                 'etapa': etapa,
                 'intervalo_seconds': int(intervalo_seconds),
                 'temp_min': float(temp_min),
                 'temp_max': float(temp_max),
+                'umid_min': float(umid_min),
+                'umid_max': float(umid_max),
                 'umid_ajuste': umid_ajuste,
                 'expiration': expiration,
                 'updated': f"{updated}",
@@ -1020,12 +1024,18 @@ def apisalvaretapa():
             print(e)
         temp_min = request.json['config']['temp_min']
         temp_max = request.json['config']['temp_max']
-        umid_ajuste = request.json['config']['umid_ajuste']
-        escala_temp = 'F'
+
         try:
-            escala_temp = request.json['config']['escala_temp']
+            umid_min = request.json['config']['umid_min']
+            umid_max = request.json['config']['umid_max']
         except Exception as e:
-            escala_temp = 'F'
+            umid_min = 0
+            umid_max = 0
+
+        try:
+            umid_ajuste = request.json['config']['umid_ajuste']
+        except Exception as e:
+            umid_ajuste = 0
         try:
             id = request.json['config']['id']
             etapa = request.json['config']['etapa']
@@ -1033,15 +1043,7 @@ def apisalvaretapa():
             capture_exception(e)
             id = 5
             etapa = 'Personalizada'
-        try: #corrigir depois de implementar campos no app
-            alerta_desat = 0
-            speaker = 0
-            speaker = request.json['config']['speaker']
-            alerta_desat = request.json['config']['alerta_desat']
-        except Exception as e:
-            capture_exception(e)
         obs = request.json['config']['obs']
-
 
     except Exception as e:
         capture_exception(e)
@@ -1054,16 +1056,15 @@ def apisalvaretapa():
         cur.execute("UPDATE etapa SET status = 0, updated = ? WHERE status = 1;", (str(datetime.now()),))
         conn.commit()
         cur.execute(
-            "UPDATE etapa SET status = 1, etapa = ?, intervalo_seconds= ?, temp_min = ?, temp_max = ?, umid_ajuste = ?, escala_temp = ?, alerta_desat = ?, speaker = ?, updated = ?, obs = ? WHERE id_etapa = ?;",
+            "UPDATE etapa SET status = 1, etapa = ?, intervalo_seconds= ?, temp_min = ?, temp_max = ?, umid_min = ?, umid_max = ?, umid_ajuste = ?, updated = ?, obs = ? WHERE id_etapa = ?;",
             (
                 etapa,
                 intervalo,
                 temp_min,
                 temp_max,
+                umid_min,
+                umid_max,
                 umid_ajuste,
-                escala_temp,
-                alerta_desat,
-                speaker,
                 str(datetime.now()),
                 obs,
                 id
