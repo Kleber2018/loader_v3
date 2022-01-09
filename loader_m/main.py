@@ -624,7 +624,7 @@ def main():
     global vr
     vr = 0
     global vr_flap
-    vr_flap = 15
+    vr_flap = 6
     global oculto
     oculto = 0
     global temperatura_celcius
@@ -757,7 +757,7 @@ def main():
         # FALTA DENSEVOLER, PENDENTE
         # DESENVOLVER UM SISTEMA PARA ALTERAR O FLAP PARA MANUAL
         vr_flap += 1
-        if vr_flap > 20:
+        if vr_flap > 10:
             vr_flap = 0
             if int(humidade) > 0:
                 controleFlap(float(humidade), configFaixa.umid_max )
