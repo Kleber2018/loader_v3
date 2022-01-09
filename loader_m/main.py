@@ -210,26 +210,6 @@ def set_led_run(vr):
 global flap_status #0 quer dizer no meio -10 aberto e +10 fechad0
 flap_status = 6
 
-def set_flap_comando(comando, tempo):
-    try:
-        global flap_status
-        print(flap_status)
-        if comando == 'abrir':
-            GPIO.output(7, True)
-            print('abrindo')
-            flap_status = flap_status - tempo
-            time.sleep(tempo)
-            GPIO.output(7, False)
-        elif comando == 'fechar':
-            GPIO.output(18, True)
-            print('fechando')
-            flap_status = flap_status + tempo
-            time.sleep(tempo)
-            GPIO.output(18, False)
-    except Exception as error:
-        capture_exception(error)
-        print('erro no led status')
-
 def iniciaSensorTemp():
     try:
         # Numero dos pinos da Raspberry Pi configurada no modo Broadcom.
@@ -537,32 +517,6 @@ def iniciaSHT():
         set_display_umid('err2')
         return False
 
-def controleFlap2(umid, configF, configG):
-    print('controle flap: ', umid, configF.umid_min, configF.umid_max, configF.temp_min, configF.temp_max, umid - configF.umid_max)
-    global flap_status
-    if umid > 0:
-        if umid > configF.umid_max + 1:
-            #umidade alta
-            if((umid - configF.umid_max) > 10):
-                set_flap_comando('abrir', 10)
-                print('umidade alta', umid - configF.umid_max)
-            elif((umid - configF.umid_max) > 5):
-                set_flap_comando('abrir', 5)
-                print('umidade alta', umid - configF.umid_max)
-            elif((umid - configF.umid_max) > 1):
-                set_flap_comando('abrir', 2)
-                print('umidade alta', umid - configF.umid_max)
-        elif umid < configF.umid_min - 1:
-            if((umid - configF.umid_min) < -10):
-                set_flap_comando('fechar', 10)
-                print('umidade baixa', umid - configF.umid_min)
-            elif((umid - configF.umid_min) < -5):
-                set_flap_comando('fechar', 5)
-                print('umidade baixa', umid - configF.umid_min)
-            elif((umid - configF.umid_min) < -1):
-                set_flap_comando('fechar', 2)
-                print('umidade baixa', umid - configF.umid_min)
-
 
 def aciona_flap(comando, tempo):
     print('acionando flap', comando, tempo)
@@ -670,7 +624,7 @@ def main():
     global vr
     vr = 0
     global vr_flap
-    vr_flap = 10
+    vr_flap = 15
     global oculto
     oculto = 0
     global temperatura_celcius
@@ -889,18 +843,21 @@ def main():
         #    print('implementar lógica para pular etapa pq expirou')
 
         if not vr % 3: #para verificar o motor a cada 12s
-            if alerta_vr == 12 or alerta_vr == 45 or alerta_vr == 48: #temperatura baixa
-                motor_fornalha_cont += 1
-                if motor_fornalha_cont > 5:
-                    if not motor_fornalha_status:
-                        motor_fornalha_status = True
-                        print('ligar motor ventoinha')
-                        motor_fornalha(motor_fornalha_status, 1)
-            else:
-                motor_fornalha_cont = 0
-                motor_fornalha_status = False
-                print('desligar motor ventoinha')
-                motor_fornalha(motor_fornalha_status, 1)
+            alerta_vr = service.verificarAlerta(temperatura_fahrenheit, humidade, configFaixa, bd_umid, configGeral)#ok = 0, TA =11, TB=12, HA=33, HB=36, TA+HA=44, TA+HB=47, TB+HA=45, TB+HB=48
+            if temperatura_fahrenheit > 0:
+                if temperatura_fahrenheit < configFaixa.temp_min - 1:
+                    motor_fornalha_cont += 1
+                    if motor_fornalha_cont > 5:
+                        if not motor_fornalha_status:
+                            motor_fornalha_status = True
+                            print('ligar motor ventoinha')
+                            motor_fornalha(motor_fornalha_status, 1)
+                else:
+                    motor_fornalha_cont = 0
+                    motor_fornalha_status = False
+                    print('desligar motor ventoinha')
+                    motor_fornalha(motor_fornalha_status, 1)
+
         
         #em produção trocar para 10min
         if contador_mudo_speak > 0:
@@ -920,10 +877,10 @@ def main():
                         speaker_alerta(False, configGeral.speaker, contador_mudo_speak)
                     if alerta_vr == 33 or alerta_vr == 44 or alerta_vr == 45: #umid alta
                         set_display_umid(str('----'))
-                        speaker_alerta(False, configGeral.speaker, contador_mudo_speak)
+                        #speaker_alerta(False, configGeral.speaker, contador_mudo_speak)
                     elif alerta_vr == 36 or alerta_vr == 47 or alerta_vr == 48:  # umid baixa
                         set_display_umid(str('-   '))
-                        speaker_alerta(False, configGeral.speaker, contador_mudo_speak)
+                        #speaker_alerta(False, configGeral.speaker, contador_mudo_speak)
                     time.sleep(0.6)
                     if sensor:
                         set_display_umid(int(sensor.relative_humidity))
