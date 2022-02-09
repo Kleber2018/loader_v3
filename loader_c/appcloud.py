@@ -130,9 +130,10 @@ def verify_firmware():
             if t.key() ==  'version':
                 version_web = t.val()
         print('testeeee', importance, version_web)
-        capture_message('atualizar_firmware 131')
+        capture_message('verify_firmware 131')
         if importance == 9:
             if version_web > version_local:
+                armazenaLog('atualizando')
                 print('executar código de atualização')
                 capture_message('atualizar_firmware 134')
                 firmware.atualizar_firmware()
@@ -177,7 +178,7 @@ def main():
         global user
         global contador3
         
-        if contador2 > 10:
+        if contador2 > 7:
             contador2 = 0
             data['cpu'] = round(get_cpu_temp())
             try:

@@ -663,22 +663,26 @@ def novo():
 @app.route('/criar', methods=['POST', ])
 def criar():
     try:
-        conn = sqlite3.connect(bd_conf)
-        cur = conn.cursor()
-
-        cur.execute("INSERT INTO Usuario(login, senha, nome, telefone, email, privilegios) VALUES (?, ?, ?, ?, ?, ?);",
-                    (
-                        request.form['login'].lower(),
-                        request.form['Senha'].lower(),
-                        request.form['Nome'],
-                        request.form['Telefone'],
-                        request.form['Email'],
-                        'adm'
-                    ))
-        conn.commit()
-        cur.close()
-        conn.close()
-        return redirect(url_for('index'))
+        login_retorno2 = auth.get_user_bd(request.form['login'].lower())
+        retornoj2 = jsonify(login_retorno2)
+        if 'inexistente' in retornoj2.json:
+            conn = sqlite3.connect(bd_conf)
+            cur = conn.cursor()
+            cur.execute("INSERT INTO Usuario(login, senha, nome, telefone, email, privilegios) VALUES (?, ?, ?, ?, ?, ?);",
+                        (
+                            request.form['login'].lower(),
+                            request.form['Senha'].lower(),
+                            request.form['Nome'],
+                            request.form['Telefone'],
+                            request.form['Email'],
+                            'adm'
+                        ))
+            conn.commit()
+            cur.close()
+            conn.close()
+            return redirect(url_for('index'))
+        else:
+            flash(f"Erro: Esse login de usuário já existe!")
     except Exception as e:
         capture_exception(e)
         print(f"Erro SQLite: {e}")
@@ -794,17 +798,17 @@ def loginapi():
                         login_retorno = auth.autentication_api(request.json['user'].lower(), request.json['senha'].lower())
                         return jsonify(login_retorno)
                     elif insert_valida == 2:
-                        return jsonify({'erro': 'Login de usuário já cadastrado'})
+                        return jsonify({'erro': 'Login de usuário já cadastrado e com senha inválida'})
                     elif insert_valida == 3:
-                        return jsonify({'erro': 'Senha inválida'})
+                        return jsonify({'erro': 'Usuário não existe e cadastro de novo usuário recusado'})
                     else:
-                        return jsonify({'erro': 'Cadastro de novo usuário recusado'})
+                        return jsonify({'erro': 'Erro no login, Cadastro de novo usuário recusado'})
                 else:
-                    return jsonify(login_retorno)
+                    return jsonify(login_retorno) #token
             else:
                 return jsonify({'erro': 'Usuario invalido!'})
         else:
-            return jsonify({'erro': 'Senha invalida!'})
+            return jsonify({'erro': 'Senha não identificada!'})
     except:
         return jsonify({'erro': 'Erro na requisicao'})
 

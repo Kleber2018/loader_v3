@@ -237,12 +237,12 @@ def button_login(user, senha, bd):
         arquivo.close()
         hora_login_livre = datetime.fromisoformat(horario)
         agora = datetime.now()
-        print(agora, hora_login_livre, agora+timedelta(minutes = 3))
-        print(agora > hora_login_livre, hora_login_livre+timedelta(minutes = 3) > agora)
-        if agora > hora_login_livre and hora_login_livre+timedelta(minutes = 3) > agora:
-            login_retorno2 = get_user_bd(user.lower())
-            retornoj2 = jsonify(login_retorno2)
-            if 'inexistente' in retornoj2.json:
+        print(agora, hora_login_livre, agora+timedelta(minutes = 2))
+        print(agora > hora_login_livre, hora_login_livre+timedelta(minutes = 2) > agora)
+        login_retorno2 = get_user_bd(user.lower())
+        retornoj2 = jsonify(login_retorno2)
+        if 'inexistente' in retornoj2.json:
+            if agora > hora_login_livre and hora_login_livre+timedelta(minutes = 2) > agora:
                 try:
                     conn = sqlite3.connect(bd)
                     cur = conn.cursor()
@@ -256,9 +256,9 @@ def button_login(user, senha, bd):
                     print(f"Erro SQLite: {e}")
                     return 0
             else:
-                return 2
+                return 3
         else:
-            return 3
+            return 2
     except Exception as e:
         capture_exception(e)
         print('erro ao criar arquivo', e)
