@@ -275,6 +275,7 @@ def index():
     dias = []
     alertas = []
     a = auth.verify_key()
+    a = 1  # deletar no futuro
     conf = getLocalConfigGeral()
     try:
         conn = sqlite3.connect(bd_m)
@@ -664,6 +665,7 @@ def criar():
     try:
         conn = sqlite3.connect(bd_conf)
         cur = conn.cursor()
+
         cur.execute("INSERT INTO Usuario(login, senha, nome, telefone, email, privilegios) VALUES (?, ?, ?, ?, ?, ?);",
                     (
                         request.form['login'].lower(),
@@ -784,16 +786,19 @@ def loginapi():
     try:
         if 'senha' in request.json:
             if 'user' in request.json:
-                login_retorno = auth.autentication_api(request.json['user'], request.json['senha'])
+                login_retorno = auth.autentication_api(request.json['user'].lower(), request.json['senha'].lower())
                 retornoj = jsonify(login_retorno)
                 if 'erro' in retornoj.json:
-                    print("verificar se existe")
                     insert_valida = auth.button_login(request.json['user'].lower(), request.json['senha'].lower(), bd_conf)
                     if insert_valida == 1:
-                        login_retorno = auth.autentication_api(request.json['user'], request.json['senha'])
+                        login_retorno = auth.autentication_api(request.json['user'].lower(), request.json['senha'].lower())
                         return jsonify(login_retorno)
+                    elif insert_valida == 2:
+                        return jsonify({'erro': 'Login de usuário já cadastrado'})
+                    elif insert_valida == 3:
+                        return jsonify({'erro': 'Senha inválida'})
                     else:
-                        return jsonify({'erro': 'Usuario ou senha invalido/recusado!'})
+                        return jsonify({'erro': 'Cadastro de novo usuário recusado'})
                 else:
                     return jsonify(login_retorno)
             else:
@@ -860,12 +865,14 @@ def excluiruser():
     try:
         if 'usuario_logado' not in session or session['usuario_logado'] == None:
             return redirect(url_for('login', proxima=url_for('novo')))
-        print(((f"{request.form['login']}"),))
-        flash('Tem certeza que deseja excluir o usuário?')
+        print((f"{request.form['login']}"))
+        flash('Você deletou o usuário:', request.form['login'])
         conn = sqlite3.connect(bd_conf)
         cur = conn.cursor()
-        cur.execute("DELETE FROM usuario WHERE login = ?;", ((request.form['login']),))
-        #conn.commit()
+        print('excluindo ', (request.form['login']))
+        print((request.form['login'],))
+        cur.execute("DELETE FROM usuario WHERE login = ?;", (request.form['login'],))
+        conn.commit()
         cur.close()
         conn.close()
         return redirect(url_for('novo'))

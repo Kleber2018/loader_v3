@@ -6,6 +6,8 @@ import json
 import datetime
 import sqlite3
 
+from flask import jsonify
+
 #bd = '/etc/loader/loader/loader_banco.db'
 bd = '/etc/loader/load/conf_banco.db'
 #https://medium.com/@gustavolpss/json-web-tokens-jwt-em-python-c76fb34d8d9
@@ -148,7 +150,7 @@ def autentication_api(user, senha):
         conn = sqlite3.connect(bd)
         cur = conn.cursor()
         cur.execute("SELECT login, senha, nome, telefone, email, privilegios FROM usuario "
-                    "WHERE login = ? and senha = ?", (user, senha))
+                    "WHERE login = ? and senha = ?", (user.lower(), senha.lower()))
         usuario = cur.fetchall()
         cur.close()
         conn.close()
@@ -157,8 +159,8 @@ def autentication_api(user, senha):
             print('antes', usuario[0][0])
             print(usuario[0][0])
             payload = {
-                'login': user,
-                'senha': senha
+                'login': user.lower(),
+                'senha': senha.lower()
                 # 'exp': (datetime.datetime.now() + datetime.timedelta(weeks=2)).timestamp(),
             }
             jwt_created = create_jwt(payload)
@@ -167,9 +169,31 @@ def autentication_api(user, senha):
             return {'erro': 'Usuario ou senha invalido!'}
     except Exception as e:
         capture_exception(e)
-        print(f"Erro bd: {e}")
+        print(f"Erro bd 172: {e}")
         return {'erro': f"Erro BD: {e}", 'description': 'Erro no banco de dados, reinicie a central!'}
 
+#para não ter usuário duplicado
+def get_user_bd(user):
+    try:
+        #enviado pelo param do get na url
+        #print(request.args.get('user'))
+        conn = sqlite3.connect(bd)
+        cur = conn.cursor()
+        cur.execute("SELECT login, senha, nome, telefone, email, privilegios FROM usuario "
+                    "WHERE login = ?", (user.lower(),))
+        usuario = cur.fetchall()
+        cur.close()
+        conn.close()
+        # retorna ('kleber', '1234', 'Kleber Santos', '988572209', 'klebers@alunos.utfpr.edu.br', 'admin')
+        if len(usuario) == 1:
+            print('antes', usuario[0][0])
+            return {'existe': user.lower()}
+        else:
+            return {'inexistente': 'Usuário não existe'}
+    except Exception as e:
+        capture_exception(e)
+        print(f"Erro bd 195: {e}")
+        return {'erro': f"Erro BD: {e}", 'description': 'Erro no banco de dados, reinicie a central!'}
 
 
     #return_token = verify_autentication_api(jwt_created)
@@ -216,20 +240,25 @@ def button_login(user, senha, bd):
         print(agora, hora_login_livre, agora+timedelta(minutes = 3))
         print(agora > hora_login_livre, hora_login_livre+timedelta(minutes = 3) > agora)
         if agora > hora_login_livre and hora_login_livre+timedelta(minutes = 3) > agora:
-            try:
-                conn = sqlite3.connect(bd)
-                cur = conn.cursor()
-                cur.execute("INSERT INTO usuario(login, senha, nome, telefone, email, privilegios) VALUES (?, ?, ?, '', '', 'default');", ( user, senha, user ))
-                conn.commit()
-                cur.close()
-                conn.close()
-                return 1
-            except Exception as e:
-                capture_exception(e)
-                print(f"Erro SQLite: {e}")
-                return 0
+            login_retorno2 = get_user_bd(user.lower())
+            retornoj2 = jsonify(login_retorno2)
+            if 'inexistente' in retornoj2.json:
+                try:
+                    conn = sqlite3.connect(bd)
+                    cur = conn.cursor()
+                    cur.execute("INSERT INTO usuario(login, senha, nome, telefone, email, privilegios) VALUES (?, ?, ?, '', '', 'default');", ( user.lower(), senha.lower(), user ))
+                    conn.commit()
+                    cur.close()
+                    conn.close()
+                    return 1
+                except Exception as e:
+                    capture_exception(e)
+                    print(f"Erro SQLite: {e}")
+                    return 0
+            else:
+                return 2
         else:
-            return 0
+            return 3
     except Exception as e:
         capture_exception(e)
         print('erro ao criar arquivo', e)
