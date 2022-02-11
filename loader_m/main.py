@@ -522,20 +522,20 @@ def aciona_flap(comando, tempo):
     print('acionando flap', comando, tempo)
     try:
         tempo = tempo * 2
-        if comando == 'abrir':
+        if comando == 'fechar':
             GPIO.output(7, True)
             GPIO.output(18, False)
-            print('abrindo')
-            time.sleep(tempo)
-            GPIO.output(7, False)
-            print('abriu')
-        elif comando == 'fechar':
-            GPIO.output(18, True)
-            GPIO.output(7, False)
             print('fechando')
             time.sleep(tempo)
-            GPIO.output(18, False)
+            GPIO.output(7, False)
             print('fechou')
+        elif comando == 'abrir':
+            GPIO.output(18, True)
+            GPIO.output(7, False)
+            print('abrindo')
+            time.sleep(tempo)
+            GPIO.output(18, False)
+            print('abriu')
     except Exception as error:
         capture_exception(error)
         print('erro no acionamento do flap status')
@@ -554,18 +554,18 @@ def controleFlap(umid, setpoint):
     correcao = flap_status-int(controle)
     flap_status = int(controle)
     print('controle pid:', controle, 'flap status:', flap_status, 'correção', correcao)
-    if correcao > 0:
+    if correcao < 0:
         #a correção precisa ser positiva
-        if flap_status == 6:
-            aciona_flap('fechar', correcao+2)
+        if flap_status == 0:
+            aciona_flap('fechar', -(correcao-2))
         else:
-            aciona_flap('fechar', correcao)
+            aciona_flap('fechar', -correcao)
     elif correcao < 0:
         #a correção precisa ser negativa
-        if flap_status == 0:
-            aciona_flap('abrir', -(correcao-2))
+        if flap_status == 6:
+            aciona_flap('abrir', correcao+2)
         else:
-            aciona_flap('abrir', -correcao)
+            aciona_flap('abrir', correcao)
      
 
 def main():
